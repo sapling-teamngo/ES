@@ -72,8 +72,8 @@
         @media (max-width: 768px) {
             .subtitle {
                 font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            display: none; /* Hide on mobile to save space */
+                margin-bottom: 0.5rem;
+                display: none; /* Hide on mobile to save space */
             }
         }
         
@@ -408,7 +408,7 @@
         @media (max-width: 768px) {
             .quarry-name {
                 font-size: 0.9rem;
-            margin-bottom: 0.3rem;
+                margin-bottom: 0.3rem;
             }
         }
         
@@ -804,7 +804,7 @@
                 <h1>Field Quarries - Online Map</h1>
                 <div class="subtitle">Real-time Field Trip Data Visualization</div>
                 <div class="scale-info">Scale: <span id="scale-value">1:25000</span></div>
-                <div class="author-info">Created by Omar Yaseen, under the supervision of prof.dr. hani al amoush</div>
+                <div class="author-info">Created by Omar Yaseen</div>
                 <div class="coordinates-info">
                     <div>Current View Coordinates:</div>
                     <div class="coordinates-grid">
@@ -1469,20 +1469,20 @@
                 });
             });
             
-            // Login function
+            // Login function - FIXED: Changed credentials to admin/map2025
             document.getElementById('login-btn').addEventListener('click', function() {
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 
-                // Simple authentication
-                if (username === 'admin' && password === 'admin') {
+                // Simple authentication - FIXED: Changed password to map2025
+                if (username === 'admin' && password === 'map2025') {
                     isAdmin = true;
                     document.getElementById('login-section').classList.add('hidden');
                     document.getElementById('admin-section').classList.remove('hidden');
                     document.getElementById('admin-indicator').style.display = 'block';
                     showNotification('Admin access granted', 'success');
                 } else {
-                    showNotification('Invalid credentials. Try admin/admin for demo.', 'error');
+                    showNotification('Invalid credentials. Try admin/map2025 for demo.', 'error');
                 }
             });
             
@@ -1647,7 +1647,7 @@
                 map.zoomOut();
             });
             
-            // Mobile sidebar toggle
+            // Mobile sidebar toggle - FIXED: Make sure it works on mobile
             document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
