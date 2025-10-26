@@ -859,7 +859,7 @@
                         
                         <div class="sync-status">
                             <div class="sync-indicator" id="sync-indicator"></div>
-                            <span id="sync-status-text">Connecting...</span>
+                            <span id="sync-status-text">Ready to load data</span>
                             <button class="refresh-btn" id="refresh-data">
                                 <i class="fas fa-sync-alt"></i> Refresh
                             </button>
@@ -1030,7 +1030,7 @@
         const quarryList = document.getElementById('quarry-list');
         let isAdmin = false;
         let currentQuarry = null;
-        let autoRefreshInterval = null;
+        let dataLoaded = false;
 
         // Function to update corner coordinates and scale
         function updateMapInfo() {
@@ -1047,7 +1047,7 @@
             document.getElementById('se-coord').textContent = 
                 `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
             
-            // Update mobile coordinates - FIXED: Ensure they update properly
+            // Update mobile coordinates
             document.getElementById('mobile-nw-coord').textContent = 
                 `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
             document.getElementById('mobile-ne-coord').textContent = 
@@ -1108,6 +1108,7 @@
                 if (data.record && Object.keys(data.record).length > 0) {
                     quarries = data.record;
                     updateSyncStatus('online', 'Data loaded successfully');
+                    dataLoaded = true;
                 } else {
                     // Initialize with ALL original quarries if bin is empty
                     await initializeDefaultData();
@@ -1260,6 +1261,7 @@
                 refreshMapAndList();
                 updateLegend();
                 showNotification('Loaded from local backup', 'warning');
+                dataLoaded = true;
             }
         }
 
@@ -1385,12 +1387,17 @@
             });
         }
 
-        // Mobile sidebar functions - FIXED: Proper mobile menu functionality
+        // Mobile sidebar functions
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
             sidebar.classList.toggle('active');
             overlay.classList.toggle('active');
+            
+            // Load data only when opening sidebar if not already loaded
+            if (!dataLoaded && sidebar.classList.contains('active')) {
+                loadQuarriesFromJSONBin();
+            }
         }
 
         function closeSidebar() {
@@ -1402,17 +1409,8 @@
 
         // Initialize the application
         function initApp() {
-            // Initial update of coordinates and scale - FIXED: Call this immediately
+            // Initial update of coordinates and scale
             updateMapInfo();
-            
-            loadQuarriesFromJSONBin();
-            
-            // Set up auto-refresh every 30 seconds
-            autoRefreshInterval = setInterval(() => {
-                if (!isAdmin) { // Only auto-refresh for non-admin users
-                    loadQuarriesFromJSONBin();
-                }
-            }, 30000);
             
             // Set up event listeners
             setupEventListeners();
@@ -1420,9 +1418,7 @@
 
         // Set up all event listeners
         function setupEventListeners() {
-            // Update map info when map moves or zooms - FIXED: Add move and zoom events
-            map.on('move', updateMapInfo);
-            map.on('zoom', updateMapInfo);
+            // Update map info when map moves or zooms
             map.on('moveend', updateMapInfo);
             map.on('zoomend', updateMapInfo);
             
@@ -1431,7 +1427,7 @@
                 document.getElementById('color-preview').style.backgroundColor = this.value;
             });
             
-            // Refresh data button
+            // Refresh data button - ONLY way to manually refresh data
             document.getElementById('refresh-data').addEventListener('click', function() {
                 loadQuarriesFromJSONBin();
             });
@@ -1457,12 +1453,12 @@
                 });
             });
             
-            // Login function - FIXED: Changed credentials to admin/map2025
+            // Login function
             document.getElementById('login-btn').addEventListener('click', function() {
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
                 
-                // Simple authentication - FIXED: Changed password to map2025
+                // Simple authentication
                 if (username === 'admin' && password === 'map2025') {
                     isAdmin = true;
                     document.getElementById('login-section').classList.add('hidden');
@@ -1635,7 +1631,7 @@
                 map.zoomOut();
             });
             
-            // Mobile sidebar toggle - FIXED: Ensure mobile menu works properly
+            // Mobile sidebar toggle
             document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
@@ -1726,13 +1722,6 @@
                 </html>
             `);
         };
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', function() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-        });
 
         // Initialize the application when the page loads
         document.addEventListener('DOMContentLoaded', initApp);
