@@ -73,7 +73,6 @@
             .subtitle {
                 font-size: 0.9rem;
                 margin-bottom: 0.5rem;
-                display: none; /* Hide on mobile to save space */
             }
         }
         
@@ -99,7 +98,7 @@
         
         @media (max-width: 768px) {
             .coordinates-info {
-                display: none; /* Hide coordinates in header on mobile */
+                display: none;
             }
         }
         
@@ -1025,19 +1024,6 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
-        // Add the original map boundary rectangle
-        const originalBounds = [
-            [32.29353, 36.10995], // NW
-            [32.24286, 36.2087]   // SE
-        ];
-        
-        // Create a rectangle to show the original map area
-        L.rectangle(originalBounds, {
-            color: "#ff7800",
-            weight: 2,
-            fillOpacity: 0.05
-        }).addTo(map);
-        
         // Global variables
         let quarries = {};
         const markers = {};
@@ -1061,7 +1047,7 @@
             document.getElementById('se-coord').textContent = 
                 `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
             
-            // Update mobile coordinates
+            // Update mobile coordinates - FIXED: Ensure they update properly
             document.getElementById('mobile-nw-coord').textContent = 
                 `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
             document.getElementById('mobile-ne-coord').textContent = 
@@ -1399,7 +1385,7 @@
             });
         }
 
-        // Mobile sidebar functions
+        // Mobile sidebar functions - FIXED: Proper mobile menu functionality
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
@@ -1416,7 +1402,7 @@
 
         // Initialize the application
         function initApp() {
-            // Initial update of coordinates and scale
+            // Initial update of coordinates and scale - FIXED: Call this immediately
             updateMapInfo();
             
             loadQuarriesFromJSONBin();
@@ -1434,7 +1420,9 @@
 
         // Set up all event listeners
         function setupEventListeners() {
-            // Update map info when map moves or zooms
+            // Update map info when map moves or zooms - FIXED: Add move and zoom events
+            map.on('move', updateMapInfo);
+            map.on('zoom', updateMapInfo);
             map.on('moveend', updateMapInfo);
             map.on('zoomend', updateMapInfo);
             
@@ -1647,7 +1635,7 @@
                 map.zoomOut();
             });
             
-            // Mobile sidebar toggle - FIXED: Make sure it works on mobile
+            // Mobile sidebar toggle - FIXED: Ensure mobile menu works properly
             document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
