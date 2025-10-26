@@ -359,6 +359,25 @@
             z-index: 10000;
             display: none;
         }
+        
+        .contour-control {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 0.75rem;
+            z-index: 1000;
+        }
+        
+        .contour-control h4 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .contour-slider {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -474,12 +493,6 @@
                                     Show Contour Lines
                                 </label>
                             </div>
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="dem-toggle">
-                                    Show DEM (Digital Elevation Model)
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -496,6 +509,18 @@
             <button class="control-btn" id="reset-view">
                 <i class="fas fa-globe"></i>
             </button>
+        </div>
+        
+        <div class="contour-control">
+            <h4>Contour Settings</h4>
+            <div class="form-group">
+                <label for="contour-density">Contour Density</label>
+                <input type="range" id="contour-density" class="contour-slider" min="1" max="10" value="5">
+            </div>
+            <div class="form-group">
+                <label for="contour-opacity">Contour Opacity</label>
+                <input type="range" id="contour-opacity" class="contour-slider" min="1" max="10" value="7">
+            </div>
         </div>
         
         <div class="legend">
@@ -669,65 +694,88 @@
         map.fitBounds(group.getBounds().pad(0.1));
         
         // Generate contour lines (simulated)
+        let contourLines = [];
+        
         function generateContourLines() {
-            // In a real application, you would use actual elevation data
-            // This is a simplified simulation for demonstration
+            // Clear existing contour lines
+            contourLines.forEach(line => map.removeLayer(line));
+            contourLines = [];
+            
             const bounds = map.getBounds();
             const north = bounds.getNorth();
             const south = bounds.getSouth();
             const east = bounds.getEast();
             const west = bounds.getWest();
             
-            // Create some simulated contour lines
-            for (let i = 0; i < 5; i++) {
-                const latOffset = (north - south) / 6;
-                const lngOffset = (east - west) / 6;
+            // Get contour settings
+            const density = parseInt(document.getElementById('contour-density').value);
+            const opacity = parseInt(document.getElementById('contour-opacity').value) / 10;
+            
+            // Create horizontal contour lines
+            for (let i = 0; i < density; i++) {
+                const lat = south + (north - south) * (i + 1) / (density + 1);
                 
                 const contourLine = L.polyline([
-                    [south + latOffset * (i+1), west + lngOffset],
-                    [south + latOffset * (i+1), east - lngOffset]
+                    [lat, west],
+                    [lat, east]
                 ], {
                     color: '#7f8c8d',
                     weight: 1,
-                    opacity: 0.7
+                    opacity: opacity,
+                    smoothFactor: 1
                 }).addTo(map);
                 
-                // Store reference to remove later if needed
-                if (!window.contourLines) window.contourLines = [];
-                window.contourLines.push(contourLine);
+                contourLines.push(contourLine);
             }
             
-            for (let i = 0; i < 5; i++) {
-                const latOffset = (north - south) / 6;
-                const lngOffset = (east - west) / 6;
+            // Create vertical contour lines
+            for (let i = 0; i < density; i++) {
+                const lng = west + (east - west) * (i + 1) / (density + 1);
                 
                 const contourLine = L.polyline([
-                    [south + latOffset, west + lngOffset * (i+1)],
-                    [north - latOffset, west + lngOffset * (i+1)]
+                    [north, lng],
+                    [south, lng]
                 ], {
                     color: '#7f8c8d',
                     weight: 1,
-                    opacity: 0.7
+                    opacity: opacity,
+                    smoothFactor: 1
                 }).addTo(map);
                 
-                if (!window.contourLines) window.contourLines = [];
-                window.contourLines.push(contourLine);
+                contourLines.push(contourLine);
             }
         }
         
         // Generate initial contour lines
         generateContourLines();
         
+        // Update contour lines when map moves
+        map.on('moveend', function() {
+            if (document.getElementById('contour-toggle').checked) {
+                generateContourLines();
+            }
+        });
+        
         // Toggle contour lines
         document.getElementById('contour-toggle').addEventListener('change', function() {
-            if (window.contourLines) {
-                window.contourLines.forEach(line => {
-                    if (this.checked) {
-                        map.addLayer(line);
-                    } else {
-                        map.removeLayer(line);
-                    }
-                });
+            if (this.checked) {
+                generateContourLines();
+            } else {
+                contourLines.forEach(line => map.removeLayer(line));
+                contourLines = [];
+            }
+        });
+        
+        // Update contour lines when settings change
+        document.getElementById('contour-density').addEventListener('input', function() {
+            if (document.getElementById('contour-toggle').checked) {
+                generateContourLines();
+            }
+        });
+        
+        document.getElementById('contour-opacity').addEventListener('input', function() {
+            if (document.getElementById('contour-toggle').checked) {
+                generateContourLines();
             }
         });
         
@@ -933,24 +981,6 @@
         document.getElementById('reset-view').addEventListener('click', function() {
             map.fitBounds(group.getBounds().pad(0.1));
         });
-        
-        // Helper function to update marker popup
-        function updateMarkerPopup(quarryId) {
-            const quarry = quarries[quarryId];
-            let popupContent = `<h3>${quarry.name}</h3>`;
-            popupContent += `<p><strong>Coordinates:</strong> ${quarry.coords[1].toFixed(5)}°, ${quarry.coords[0].toFixed(5)}°</p>`;
-            popupContent += `<p>${quarry.description}</p>`;
-            
-            if (quarry.images.length > 0) {
-                popupContent += '<div class="image-gallery">';
-                quarry.images.forEach(img => {
-                    popupContent += `<img src="${img}" class="image-thumbnail" onclick="openImage('${img}')">`;
-                });
-                popupContent += '</div>';
-            }
-            
-            markers[quarryId].setPopupContent(popupContent);
-        }
         
         // Helper function to highlight quarry
         function highlightQuarry(quarryId) {
