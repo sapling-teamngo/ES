@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hayyan Quarries - Online Interactive Map</title>
+    <title>Field Quarries - Online Interactive Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -29,11 +29,24 @@
         header {
             background: linear-gradient(135deg, #2c3e50, #4a6491);
             color: white;
-            padding: 1rem 1.5rem;
+            padding: 1rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 0.75rem;
+            }
+            
+            .connection-status {
+                margin-top: 0.5rem;
+                align-self: flex-end;
+            }
         }
         
         .header-content {
@@ -45,9 +58,23 @@
             margin-bottom: 0.3rem;
         }
         
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.4rem;
+            }
+        }
+        
         .subtitle {
             font-size: 1rem;
             opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .subtitle {
+                font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: none; /* Hide on mobile to save space */
+            }
         }
         
         .scale-info {
@@ -68,6 +95,12 @@
             border-radius: 4px;
             margin-top: 0.5rem;
             font-size: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .coordinates-info {
+                display: none; /* Hide coordinates in header on mobile */
+            }
         }
         
         .coordinates-grid {
@@ -114,10 +147,30 @@
             margin-left: 1rem;
         }
         
+        @media (max-width: 768px) {
+            .online-indicator {
+                margin-left: 0.5rem;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            
+            .admin-indicator {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+        
         .main-content {
             display: flex;
             flex: 1;
             overflow: hidden;
+            flex-direction: row;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
         }
         
         #map {
@@ -134,6 +187,26 @@
             flex-direction: column;
             box-shadow: -2px 0 10px rgba(0,0,0,0.1);
             z-index: 2;
+            transition: transform 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                top: 0;
+                right: 0;
+                height: 100%;
+                width: 85%;
+                max-width: 320px;
+                transform: translateX(100%);
+                z-index: 1001;
+                border-left: none;
+                box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
         }
         
         .sidebar-tabs {
@@ -150,6 +223,14 @@
             font-weight: 600;
             color: #7f8c8d;
             transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .tab-btn {
+                padding: 0.8rem;
+                font-size: 0.85rem;
+            }
         }
         
         .tab-btn.active {
@@ -161,6 +242,12 @@
             flex: 1;
             overflow-y: auto;
             padding: 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .tab-content {
+                padding: 1rem;
+            }
         }
         
         .tab-panel {
@@ -179,12 +266,26 @@
             margin-bottom: 1.5rem;
         }
         
+        @media (max-width: 768px) {
+            .admin-panel {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+        }
+        
         .admin-panel h3 {
             margin-bottom: 1rem;
             color: #2c3e50;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-panel h3 {
+                font-size: 1rem;
+            }
         }
         
         .form-group {
@@ -196,6 +297,7 @@
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: #495057;
+            font-size: 0.9rem;
         }
         
         input, textarea, select {
@@ -204,6 +306,13 @@
             border: 1px solid #ced4da;
             border-radius: 4px;
             font-size: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            input, textarea, select {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
         }
         
         button {
@@ -218,6 +327,14 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            button {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.85rem;
+            }
         }
         
         button:hover {
@@ -262,6 +379,13 @@
             transition: all 0.2s;
         }
         
+        @media (max-width: 768px) {
+            .quarry-item {
+                padding: 0.8rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+        
         .quarry-item:hover {
             background-color: #f8f9fa;
             border-color: #3498db;
@@ -278,6 +402,14 @@
             font-weight: 700;
             margin-bottom: 0.5rem;
             color: #2c3e50;
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 768px) {
+            .quarry-name {
+                font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            }
         }
         
         .quarry-coords {
@@ -285,10 +417,23 @@
             color: #7f8c8d;
         }
         
+        @media (max-width: 768px) {
+            .quarry-coords {
+                font-size: 0.8rem;
+            }
+        }
+        
         .quarry-description {
             font-size: 0.9rem;
             margin-top: 0.5rem;
             color: #5d6d7e;
+        }
+        
+        @media (max-width: 768px) {
+            .quarry-description {
+                font-size: 0.85rem;
+                margin-top: 0.3rem;
+            }
         }
         
         .login-form {
@@ -340,6 +485,18 @@
             min-width: 120px;
         }
         
+        @media (max-width: 768px) {
+            .admin-controls {
+                gap: 0.3rem;
+                margin-top: 0.8rem;
+            }
+            
+            .admin-controls button {
+                min-width: 100px;
+                padding: 0.5rem 1rem;
+            }
+        }
+        
         .coordinates-input {
             display: flex;
             gap: 0.5rem;
@@ -358,6 +515,16 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             padding: 0.5rem;
             z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (max-width: 768px) {
+            .map-controls {
+                top: 70px;
+                right: 10px;
+                padding: 0.4rem;
+            }
         }
         
         .control-btn {
@@ -371,6 +538,15 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .control-btn {
+                padding: 0.4rem;
+                margin: 0.2rem;
+                font-size: 0.8rem;
+            }
         }
         
         .legend {
@@ -383,6 +559,15 @@
             padding: 0.75rem;
             z-index: 1000;
             max-width: 200px;
+        }
+        
+        @media (max-width: 768px) {
+            .legend {
+                bottom: 80px;
+                right: 10px;
+                max-width: 180px;
+                padding: 0.6rem;
+            }
         }
         
         .legend-item {
@@ -429,6 +614,17 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 10000;
             display: none;
+            max-width: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                padding: 0.8rem 1.2rem;
+            }
         }
         
         .data-management {
@@ -510,16 +706,105 @@
         .refresh-btn:hover {
             color: #2980b9;
         }
+        
+        /* Mobile-specific additions */
+        .mobile-toggle {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: flex;
+            }
+        }
+        
+        .mobile-coordinates-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 0.8rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-coordinates-panel {
+                display: block;
+            }
+        }
+        
+        .mobile-coordinates-panel h4 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .overlay.active {
+                display: block;
+            }
+        }
+        
+        .sidebar-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #7f8c8d;
+            cursor: pointer;
+            display: none;
+            z-index: 1002;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-close {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <div class="header-content">
-                <h1>Hayyan Quarries - Online Map</h1>
+                <h1>Field Quarries - Online Map</h1>
                 <div class="subtitle">Real-time Field Trip Data Visualization</div>
                 <div class="scale-info">Scale: <span id="scale-value">1:25000</span></div>
-                <div class="author-info">Created by Omar Yaseen</div>
+                <div class="author-info">Created by Omar Yaseen, under the supervision of prof.dr. hani al amoush</div>
                 <div class="coordinates-info">
                     <div>Current View Coordinates:</div>
                     <div class="coordinates-grid">
@@ -555,13 +840,16 @@
         <div class="main-content">
             <div id="map"></div>
             
-            <div class="sidebar">
+            <div class="sidebar" id="sidebar">
+                <button class="sidebar-close" id="sidebar-close">
+                    <i class="fas fa-times"></i>
+                </button>
                 <div class="sidebar-tabs">
                     <button class="tab-btn active" data-tab="info-tab">
-                        <i class="fas fa-info-circle"></i> Information
+                        <i class="fas fa-info-circle"></i> <span class="tab-text">Information</span>
                     </button>
                     <button class="tab-btn" data-tab="admin-tab">
-                        <i class="fas fa-cog"></i> Admin Panel
+                        <i class="fas fa-cog"></i> <span class="tab-text">Admin Panel</span>
                     </button>
                 </div>
                 
@@ -679,9 +967,37 @@
                 <i class="fas fa-search-minus"></i>
             </button>
             <button class="control-btn" id="reset-view">
-                <i class="fas fa-globe"></i> Reset View
+                <i class="fas fa-globe"></i>
             </button>
         </div>
+        
+        <button class="mobile-toggle" id="mobile-toggle">
+            <i class="fas fa-bars"></i> Menu
+        </button>
+        
+        <div class="mobile-coordinates-panel">
+            <h4><i class="fas fa-map-marker-alt"></i> Current View</h4>
+            <div class="coordinates-grid">
+                <div class="coordinate-item">
+                    <div class="coordinate-label">NW</div>
+                    <div class="coordinate-value" id="mobile-nw-coord">32.29353°, 36.10995°</div>
+                </div>
+                <div class="coordinate-item">
+                    <div class="coordinate-label">NE</div>
+                    <div class="coordinate-value" id="mobile-ne-coord">32.29288°, 36.2088°</div>
+                </div>
+                <div class="coordinate-item">
+                    <div class="coordinate-label">SW</div>
+                    <div class="coordinate-value" id="mobile-sw-coord">32.24286°, 36.11005°</div>
+                </div>
+                <div class="coordinate-item">
+                    <div class="coordinate-label">SE</div>
+                    <div class="coordinate-value" id="mobile-se-coord">32.24695°, 36.2087°</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overlay" id="overlay"></div>
         
         <div class="legend" id="legend">
             <h4>Legend</h4>
@@ -743,6 +1059,16 @@
             document.getElementById('sw-coord').textContent = 
                 `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
             document.getElementById('se-coord').textContent = 
+                `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
+            
+            // Update mobile coordinates
+            document.getElementById('mobile-nw-coord').textContent = 
+                `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
+            document.getElementById('mobile-ne-coord').textContent = 
+                `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
+            document.getElementById('mobile-sw-coord').textContent = 
+                `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
+            document.getElementById('mobile-se-coord').textContent = 
                 `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
             
             // Update scale based on zoom level
@@ -1020,6 +1346,10 @@
                 
                 quarryItem.addEventListener('click', function() {
                     highlightQuarry(quarry.id);
+                    // On mobile, close sidebar after selection
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
                 });
                 
                 quarryList.appendChild(quarryItem);
@@ -1067,6 +1397,21 @@
             marker.on('click', function() {
                 highlightQuarry(quarryId);
             });
+        }
+
+        // Mobile sidebar functions
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
         }
 
         // Initialize the application
@@ -1301,6 +1646,11 @@
             document.getElementById('zoom-out').addEventListener('click', function() {
                 map.zoomOut();
             });
+            
+            // Mobile sidebar toggle
+            document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
             
             // Add click event to map to add new quarries (admin only)
             map.on('click', function(e) {
