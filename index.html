@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hayyan Quarries - Interactive Map</title>
+    <title>Hayyan Quarries - Online Interactive Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -69,6 +69,18 @@
             border-radius: 20px;
             font-size: 0.9rem;
             display: none;
+        }
+        
+        .online-indicator {
+            background-color: #27ae60;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
         }
         
         .main-content {
@@ -197,6 +209,14 @@
             background-color: #c0392b;
         }
         
+        .btn-success {
+            background-color: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
         .quarry-list {
             flex: 1;
         }
@@ -281,6 +301,12 @@
             display: flex;
             gap: 0.5rem;
             margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .admin-controls button {
+            flex: 1;
+            min-width: 120px;
         }
         
         .coordinates-input {
@@ -340,25 +366,6 @@
             border-radius: 50%;
         }
         
-        .contour-control {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            padding: 0.75rem;
-            z-index: 1000;
-        }
-        
-        .contour-control h4 {
-            margin-bottom: 0.5rem;
-        }
-        
-        .contour-slider {
-            width: 100%;
-        }
-        
         .color-picker {
             display: flex;
             align-items: center;
@@ -392,11 +399,84 @@
             display: none;
         }
         
-        .contour-line {
-            stroke: #7f8c8d;
-            stroke-width: 1;
-            fill: none;
-            opacity: 0.7;
+        .data-management {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .instructions {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .instructions h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .instructions ul {
+            padding-left: 1.5rem;
+            color: #5d6d7e;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #95a5a6;
+        }
+        
+        .sync-indicator.syncing {
+            background-color: #f39c12;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .sync-indicator.online {
+            background-color: #27ae60;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .refresh-btn:hover {
+            color: #2980b9;
         }
     </style>
 </head>
@@ -404,13 +484,18 @@
     <div class="container">
         <header>
             <div class="header-content">
-                <h1>Hayyan Quarries Interactive Map</h1>
-                <div class="subtitle">Field Trip Data Visualization</div>
+                <h1>Hayyan Quarries - Online Map</h1>
+                <div class="subtitle">Real-time Field Trip Data Visualization</div>
                 <div class="scale-info">Scale: 1:25000</div>
                 <div class="author-info">Created by Omar Yaseen</div>
             </div>
-            <div class="admin-indicator" id="admin-indicator">
-                <i class="fas fa-user-shield"></i> Admin Mode
+            <div class="connection-status">
+                <div class="admin-indicator" id="admin-indicator">
+                    <i class="fas fa-user-shield"></i> Admin Mode
+                </div>
+                <div class="online-indicator" id="online-indicator">
+                    <i class="fas fa-cloud"></i> Online
+                </div>
             </div>
         </header>
         
@@ -430,7 +515,15 @@
                 <div class="tab-content">
                     <div class="tab-panel active" id="info-tab">
                         <h3><i class="fas fa-mountain"></i> Quarries Overview</h3>
-                        <p>This map displays the quarries surveyed during the field trip. Click on any quarry marker to see detailed information.</p>
+                        <p>This map displays quarries in real-time. Changes made by admins are instantly visible to all users.</p>
+                        
+                        <div class="sync-status">
+                            <div class="sync-indicator" id="sync-indicator"></div>
+                            <span id="sync-status-text">Connecting...</span>
+                            <button class="refresh-btn" id="refresh-data">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
                         
                         <div class="quarry-list" id="quarry-list">
                             <!-- Quarry items will be populated by JavaScript -->
@@ -503,16 +596,21 @@
                                         <i class="fas fa-sign-out-alt"></i> Logout
                                     </button>
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <div class="admin-panel">
-                            <h3><i class="fas fa-layer-group"></i> Map Layers</h3>
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="contour-toggle" checked>
-                                    Show Contour Lines
-                                </label>
+
+                                <div class="data-management">
+                                    <h3><i class="fas fa-cloud"></i> Real-time Sync</h3>
+                                    <p>Changes are automatically synchronized across all devices.</p>
+                                    
+                                    <div class="instructions">
+                                        <h4>How it works:</h4>
+                                        <ul>
+                                            <li>All changes are saved to JSONBin.io cloud storage</li>
+                                            <li>Other users see updates when they refresh</li>
+                                            <li>No manual export/import needed</li>
+                                            <li>Works across all devices and browsers</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -532,18 +630,6 @@
             </button>
         </div>
         
-        <div class="contour-control">
-            <h4>Contour Settings</h4>
-            <div class="form-group">
-                <label for="contour-density">Contour Density</label>
-                <input type="range" id="contour-density" class="contour-slider" min="1" max="10" value="5">
-            </div>
-            <div class="form-group">
-                <label for="contour-opacity">Contour Opacity</label>
-                <input type="range" id="contour-opacity" class="contour-slider" min="1" max="10" value="7">
-            </div>
-        </div>
-        
         <div class="legend">
             <h4>Legend</h4>
             <div class="legend-item">
@@ -558,17 +644,19 @@
                 <div class="legend-color" style="background-color: #2ecc71;"></div>
                 <span>Custom Quarries</span>
             </div>
-            <div class="legend-item">
-                <div style="width:20px;height:2px;background:#7f8c8d;margin-right:0.5rem;"></div>
-                <span>Contour Lines</span>
-            </div>
         </div>
         
         <div class="notification" id="notification"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
     <script>
+        // JSONBin.io Configuration
+        const JSONBIN_API_KEY = '$2a$10$mbAGRGVfxBOnKPqbUqdeneBdAW.NgxUCF0678vE1fK5BKv/zZqq4q';
+        const JSONBIN_BIN_ID = '68fe54eaae596e708f2e4e61';
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
         // Initialize the map
         const map = L.map('map').setView([32.26, 36.15], 12);
         
@@ -577,54 +665,228 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
-        // Define quarry data
-        let quarries = {
-            'day1-quarry1': {
-                id: 'day1-quarry1',
-                coords: [32.26054, 36.15565],
-                name: 'Day 1: Quarry 1',
-                description: 'First quarry surveyed on day 1. Notable for its extensive excavation and visible stratification.',
-                color: '#e74c3c',
-                images: []
-            },
-            'day1-quarry2': {
-                id: 'day1-quarry2',
-                coords: [32.25714, 36.15712],
-                name: 'Day 1: Quarry 2',
-                description: 'Second quarry from day 1. Contains unique mineral deposits in the northern section.',
-                color: '#e74c3c',
-                images: []
-            },
-            'day1-quarry3': {
-                id: 'day1-quarry3',
-                coords: [32.26052, 36.15644],
-                name: 'Day 1: Quarry 3',
-                description: 'Third quarry surveyed on day 1. Smaller in scale but with interesting geological features.',
-                color: '#e74c3c',
-                images: []
-            },
-            'day2-quarry1': {
-                id: 'day2-quarry1',
-                coords: [32.27659, 36.14886],
-                name: 'Day 2: Quarry 1',
-                description: 'First quarry from day 2. Larger excavation area with multiple access points.',
-                color: '#3498db',
-                images: []
-            },
-            'day2-quarry2': {
-                id: 'day2-quarry2',
-                coords: [32.27537, 36.14820],
-                name: 'Day 2: Quarry 2',
-                description: 'Second quarry from day 2. Deep excavation with visible rock layers.',
-                color: '#3498db',
-                images: []
-            }
-        };
-        
-        // Create markers for each quarry
+        // Global variables
+        let quarries = {};
         const markers = {};
         const quarryList = document.getElementById('quarry-list');
-        
+        let isAdmin = false;
+        let currentQuarry = null;
+        let autoRefreshInterval = null;
+
+        // Update sync status
+        function updateSyncStatus(status, text) {
+            const indicator = document.getElementById('sync-indicator');
+            const statusText = document.getElementById('sync-status-text');
+            
+            indicator.className = 'sync-indicator';
+            if (status === 'syncing') {
+                indicator.classList.add('syncing');
+            } else if (status === 'online') {
+                indicator.classList.add('online');
+            }
+            
+            statusText.textContent = text;
+        }
+
+        // Load quarries from JSONBin.io
+        async function loadQuarriesFromJSONBin() {
+            updateSyncStatus('syncing', 'Loading data...');
+            
+            try {
+                const response = await fetch(JSONBIN_URL + '/latest', {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.record && Object.keys(data.record).length > 0) {
+                    quarries = data.record;
+                    updateSyncStatus('online', 'Data loaded successfully');
+                } else {
+                    // Initialize with default data if bin is empty
+                    await initializeDefaultData();
+                }
+                
+                // Update UI
+                refreshMapAndList();
+                showNotification('Data loaded successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateSyncStatus('offline', 'Connection error');
+                showNotification('Error loading data from server', 'error');
+                
+                // Try to load from localStorage as fallback
+                loadFromLocalStorage();
+            }
+        }
+
+        // Initialize with default data
+        async function initializeDefaultData() {
+            const defaultQuarries = {
+                'day1-quarry1': {
+                    id: 'day1-quarry1',
+                    coords: [32.26054, 36.15565],
+                    name: 'Day 1: Quarry 1',
+                    description: 'First quarry surveyed on day 1. Notable for its extensive excavation and visible stratification.',
+                    color: '#e74c3c',
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                },
+                'day1-quarry2': {
+                    id: 'day1-quarry2',
+                    coords: [32.25714, 36.15712],
+                    name: 'Day 1: Quarry 2',
+                    description: 'Second quarry from day 1. Contains unique mineral deposits in the northern section.',
+                    color: '#e74c3c',
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                },
+                'day1-quarry3': {
+                    id: 'day1-quarry3',
+                    coords: [32.26052, 36.15644],
+                    name: 'Day 1: Quarry 3',
+                    description: 'Third quarry surveyed on day 1. Smaller in scale but with interesting geological features.',
+                    color: '#e74c3c',
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                },
+                'day2-quarry1': {
+                    id: 'day2-quarry1',
+                    coords: [32.27659, 36.14886],
+                    name: 'Day 2: Quarry 1',
+                    description: 'First quarry from day 2. Larger excavation area with multiple access points.',
+                    color: '#3498db',
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                },
+                'day2-quarry2': {
+                    id: 'day2-quarry2',
+                    coords: [32.27537, 36.14820],
+                    name: 'Day 2: Quarry 2',
+                    description: 'Second quarry from day 2. Deep excavation with visible rock layers.',
+                    color: '#3498db',
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                }
+            };
+            
+            // Save to JSONBin.io
+            await saveAllQuarriesToJSONBin(defaultQuarries);
+        }
+
+        // Save all quarries to JSONBin.io
+        async function saveAllQuarriesToJSONBin(quarriesData) {
+            updateSyncStatus('syncing', 'Saving data...');
+            
+            try {
+                const response = await fetch(JSONBIN_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(quarriesData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                updateSyncStatus('online', 'Data saved successfully');
+                showNotification('Data saved to cloud', 'success');
+                
+                // Also save to localStorage as backup
+                saveToLocalStorage(quarriesData);
+                
+                return result;
+            } catch (error) {
+                console.error('Error saving data:', error);
+                updateSyncStatus('offline', 'Save failed');
+                showNotification('Error saving to cloud, using local storage', 'error');
+                
+                // Fallback to localStorage
+                saveToLocalStorage(quarriesData);
+                throw error;
+            }
+        }
+
+        // Save quarry to JSONBin.io
+        async function saveQuarryToJSONBin(quarryId, quarryData) {
+            // Update the quarry data
+            quarryData.updated = Date.now();
+            if (!quarryData.created) {
+                quarryData.created = Date.now();
+            }
+            
+            quarries[quarryId] = quarryData;
+            
+            // Save all quarries to JSONBin.io
+            await saveAllQuarriesToJSONBin(quarries);
+        }
+
+        // Delete quarry from JSONBin.io
+        async function deleteQuarryFromJSONBin(quarryId) {
+            updateSyncStatus('syncing', 'Deleting...');
+            
+            delete quarries[quarryId];
+            
+            // Save all quarries to JSONBin.io
+            await saveAllQuarriesToJSONBin(quarries);
+        }
+
+        // Local storage fallback functions
+        function saveToLocalStorage(data) {
+            localStorage.setItem('hayyanQuarries_backup', JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('hayyanQuarries_backup');
+            if (saved) {
+                quarries = JSON.parse(saved);
+                refreshMapAndList();
+                showNotification('Loaded from local backup', 'warning');
+            }
+        }
+
+        // Refresh map and list
+        function refreshMapAndList() {
+            // Remove all existing markers
+            Object.keys(markers).forEach(id => {
+                if (markers[id]) {
+                    map.removeLayer(markers[id]);
+                }
+            });
+            
+            // Clear markers object
+            Object.keys(markers).forEach(key => delete markers[key]);
+            
+            // Add new markers
+            Object.keys(quarries).forEach(id => updateMarker(id));
+            renderQuarryList();
+            
+            // Update map bounds if there are markers
+            const markerArray = Object.values(markers);
+            if (markerArray.length > 0) {
+                const group = new L.featureGroup(markerArray);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
         // Function to render quarry list
         function renderQuarryList() {
             quarryList.innerHTML = '';
@@ -650,10 +912,11 @@
                 quarryList.appendChild(quarryItem);
             });
         }
-        
+
         // Function to create or update a marker
         function updateMarker(quarryId) {
             const quarry = quarries[quarryId];
+            if (!quarry) return;
             
             // Remove existing marker if it exists
             if (markers[quarryId]) {
@@ -676,7 +939,7 @@
             popupContent += `<p><strong>Coordinates:</strong> ${quarry.coords[1].toFixed(5)}°, ${quarry.coords[0].toFixed(5)}°</p>`;
             popupContent += `<p>${quarry.description}</p>`;
             
-            if (quarry.images.length > 0) {
+            if (quarry.images && quarry.images.length > 0) {
                 popupContent += '<div class="image-gallery">';
                 quarry.images.forEach(img => {
                     popupContent += `<img src="${img}" class="image-thumbnail" onclick="openImage('${img}')">`;
@@ -692,354 +955,235 @@
                 highlightQuarry(quarryId);
             });
         }
-        
-        // Initialize markers and list
-        Object.keys(quarries).forEach(id => {
-            updateMarker(id);
-        });
-        renderQuarryList();
-        
-        // Set map bounds to show all quarries
-        const group = new L.featureGroup(Object.values(markers));
-        map.fitBounds(group.getBounds().pad(0.1));
-        
-        // Generate realistic contour lines
-        let contourLines = [];
-        
-        function generateContourLines() {
-            // Clear existing contour lines
-            contourLines.forEach(line => map.removeLayer(line));
-            contourLines = [];
+
+        // Initialize the application
+        function initApp() {
+            loadQuarriesFromJSONBin();
             
-            const bounds = map.getBounds();
-            const north = bounds.getNorth();
-            const south = bounds.getSouth();
-            const east = bounds.getEast();
-            const west = bounds.getWest();
-            
-            // Get contour settings
-            const density = parseInt(document.getElementById('contour-density').value);
-            const opacity = parseInt(document.getElementById('contour-opacity').value) / 10;
-            
-            // Create realistic contour lines with elevation simulation
-            const baseElevation = 500; // Base elevation in meters
-            const elevationRange = 200; // Elevation range in meters
-            
-            // Create contour lines at different elevations
-            for (let e = 0; e < density; e++) {
-                const elevation = baseElevation + (elevationRange * e / density);
-                
-                // Create a wavy contour line to simulate terrain
-                const points = [];
-                const numPoints = 50;
-                
-                for (let i = 0; i <= numPoints; i++) {
-                    const lng = west + (east - west) * i / numPoints;
-                    
-                    // Add some randomness to simulate terrain
-                    const latVariation = Math.sin(i * 0.5) * 0.01;
-                    const baseLat = north - (north - south) * 0.3 - e * 0.01;
-                    const lat = baseLat + latVariation;
-                    
-                    points.push([lat, lng]);
+            // Set up auto-refresh every 30 seconds
+            autoRefreshInterval = setInterval(() => {
+                if (!isAdmin) { // Only auto-refresh for non-admin users
+                    loadQuarriesFromJSONBin();
                 }
-                
-                const contourLine = L.polyline(points, {
-                    color: '#7f8c8d',
-                    weight: 1,
-                    opacity: opacity,
-                    smoothFactor: 1
-                }).addTo(map);
-                
-                // Add elevation label to some contours
-                if (e % 2 === 0) {
-                    const midPoint = points[Math.floor(points.length / 2)];
-                    L.marker(midPoint, {
-                        icon: L.divIcon({
-                            className: 'contour-label',
-                            html: `<div style="background:white; padding:2px 5px; border-radius:3px; font-size:10px; border:1px solid #7f8c8d;">${elevation}m</div>`,
-                            iconSize: [40, 20],
-                            iconAnchor: [20, 10]
-                        })
-                    }).addTo(map);
-                }
-                
-                contourLines.push(contourLine);
-            }
+            }, 30000);
             
-            // Add some additional contour lines for more detail
-            for (let e = 0; e < density * 2; e++) {
-                if (e % 2 === 0) continue; // Skip every other to avoid overcrowding
-                
-                const elevation = baseElevation + (elevationRange * e / (density * 2));
-                
-                // Create a different set of wavy lines
-                const points = [];
-                const numPoints = 30;
-                
-                for (let i = 0; i <= numPoints; i++) {
-                    const lat = south + (north - south) * i / numPoints;
-                    
-                    // Add some randomness to simulate terrain
-                    const lngVariation = Math.cos(i * 0.3) * 0.01;
-                    const baseLng = west + (east - west) * 0.7 - e * 0.005;
-                    const lng = baseLng + lngVariation;
-                    
-                    points.push([lat, lng]);
-                }
-                
-                const contourLine = L.polyline(points, {
-                    color: '#7f8c8d',
-                    weight: 1,
-                    opacity: opacity * 0.7, // Slightly more transparent
-                    smoothFactor: 1
-                }).addTo(map);
-                
-                contourLines.push(contourLine);
-            }
+            // Set up event listeners
+            setupEventListeners();
         }
-        
-        // Generate initial contour lines
-        generateContourLines();
-        
-        // Update contour lines when map moves
-        map.on('moveend', function() {
-            if (document.getElementById('contour-toggle').checked) {
-                generateContourLines();
-            }
-        });
-        
-        // Toggle contour lines
-        document.getElementById('contour-toggle').addEventListener('change', function() {
-            if (this.checked) {
-                generateContourLines();
-            } else {
-                contourLines.forEach(line => map.removeLayer(line));
-                contourLines = [];
-            }
-        });
-        
-        // Update contour lines when settings change
-        document.getElementById('contour-density').addEventListener('input', function() {
-            if (document.getElementById('contour-toggle').checked) {
-                generateContourLines();
-            }
-        });
-        
-        document.getElementById('contour-opacity').addEventListener('input', function() {
-            if (document.getElementById('contour-toggle').checked) {
-                generateContourLines();
-            }
-        });
-        
-        // Update color preview when color picker changes
-        document.getElementById('quarry-color').addEventListener('input', function() {
-            document.getElementById('color-preview').style.backgroundColor = this.value;
-        });
-        
-        // Admin functionality
-        let isAdmin = false;
-        let currentQuarry = null;
-        
-        // Tab functionality
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                
-                // Update active tab button
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Update active tab panel
-                document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-                document.getElementById(tabId).classList.add('active');
+
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Update color preview when color picker changes
+            document.getElementById('quarry-color').addEventListener('input', function() {
+                document.getElementById('color-preview').style.backgroundColor = this.value;
             });
-        });
-        
-        // Login function
-        document.getElementById('login-btn').addEventListener('click', function() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
             
-            // Simple authentication (in a real app, this would be server-side)
-            if (username === 'admin' && password === 'admin') {
-                isAdmin = true;
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('admin-section').classList.remove('hidden');
-                document.getElementById('admin-indicator').style.display = 'block';
-                showNotification('Admin access granted', 'success');
-            } else {
-                showNotification('Invalid credentials. Try admin/admin for demo.', 'error');
-            }
-        });
-        
-        // Logout function
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            isAdmin = false;
-            document.getElementById('login-section').classList.remove('hidden');
-            document.getElementById('admin-section').classList.add('hidden');
-            document.getElementById('admin-indicator').style.display = 'none';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            currentQuarry = null;
-            resetForm();
-            showNotification('Logged out successfully', 'success');
-        });
-        
-        // Add new quarry
-        document.getElementById('add-quarry-btn').addEventListener('click', function() {
-            if (!isAdmin) {
-                showNotification('Please log in as admin first.', 'error');
-                return;
-            }
+            // Refresh data button
+            document.getElementById('refresh-data').addEventListener('click', function() {
+                loadQuarriesFromJSONBin();
+            });
             
-            const name = document.getElementById('quarry-name').value;
-            const lat = parseFloat(document.getElementById('lat').value);
-            const lng = parseFloat(document.getElementById('lng').value);
-            const description = document.getElementById('quarry-description').value;
-            const color = document.getElementById('quarry-color').value;
+            // Tab functionality
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Update active tab button
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active tab panel
+                    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
             
-            if (!name || !lat || !lng) {
-                showNotification('Please fill in at least name and coordinates.', 'error');
-                return;
-            }
+            // Login function
+            document.getElementById('login-btn').addEventListener('click', function() {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                // Simple authentication
+                if (username === 'admin' && password === 'admin') {
+                    isAdmin = true;
+                    document.getElementById('login-section').classList.add('hidden');
+                    document.getElementById('admin-section').classList.remove('hidden');
+                    document.getElementById('admin-indicator').style.display = 'block';
+                    showNotification('Admin access granted', 'success');
+                } else {
+                    showNotification('Invalid credentials. Try admin/admin for demo.', 'error');
+                }
+            });
             
-            // Generate a unique ID
-            const id = 'quarry-' + Date.now();
+            // Logout function
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                isAdmin = false;
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('admin-section').classList.add('hidden');
+                document.getElementById('admin-indicator').style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                currentQuarry = null;
+                resetForm();
+                showNotification('Logged out successfully', 'success');
+            });
             
-            // Add to quarries object
-            quarries[id] = {
-                id: id,
-                coords: [lat, lng],
-                name: name,
-                description: description,
-                color: color,
-                images: []
-            };
-            
-            // Update map and list
-            updateMarker(id);
-            renderQuarryList();
-            
-            // Reset form
-            resetForm();
-            
-            showNotification('Quarry added successfully!', 'success');
-        });
-        
-        // Update quarry
-        document.getElementById('update-quarry-btn').addEventListener('click', function() {
-            if (!isAdmin) {
-                showNotification('Please log in as admin first.', 'error');
-                return;
-            }
-            
-            if (!currentQuarry) {
-                showNotification('Please select a quarry to update.', 'error');
-                return;
-            }
-            
-            const name = document.getElementById('quarry-name').value;
-            const lat = parseFloat(document.getElementById('lat').value);
-            const lng = parseFloat(document.getElementById('lng').value);
-            const description = document.getElementById('quarry-description').value;
-            const color = document.getElementById('quarry-color').value;
-            
-            if (!name || !lat || !lng) {
-                showNotification('Please fill in at least name and coordinates.', 'error');
-                return;
-            }
-            
-            // Update quarry
-            quarries[currentQuarry].name = name;
-            quarries[currentQuarry].coords = [lat, lng];
-            quarries[currentQuarry].description = description;
-            quarries[currentQuarry].color = color;
-            
-            // Update map and list
-            updateMarker(currentQuarry);
-            renderQuarryList();
-            
-            showNotification('Quarry updated successfully!', 'success');
-        });
-        
-        // Delete quarry
-        document.getElementById('delete-quarry-btn').addEventListener('click', function() {
-            if (!isAdmin) {
-                showNotification('Please log in as admin first.', 'error');
-                return;
-            }
-            
-            if (!currentQuarry) {
-                showNotification('Please select a quarry to delete.', 'error');
-                return;
-            }
-            
-            if (confirm('Are you sure you want to delete this quarry?')) {
-                // Remove from map
-                if (markers[currentQuarry]) {
-                    map.removeLayer(markers[currentQuarry]);
-                    delete markers[currentQuarry];
+            // Add new quarry
+            document.getElementById('add-quarry-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in as admin first.', 'error');
+                    return;
                 }
                 
-                // Remove from quarries object
-                delete quarries[currentQuarry];
+                const name = document.getElementById('quarry-name').value;
+                const lat = parseFloat(document.getElementById('lat').value);
+                const lng = parseFloat(document.getElementById('lng').value);
+                const description = document.getElementById('quarry-description').value;
+                const color = document.getElementById('quarry-color').value;
                 
-                // Update list
-                renderQuarryList();
+                if (!name || !lat || !lng) {
+                    showNotification('Please fill in at least name and coordinates.', 'error');
+                    return;
+                }
+                
+                // Generate a unique ID
+                const id = 'quarry-' + Date.now();
+                
+                // Create quarry data
+                const quarryData = {
+                    id: id,
+                    coords: [lat, lng],
+                    name: name,
+                    description: description,
+                    color: color,
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                };
+                
+                // Save to JSONBin.io
+                await saveQuarryToJSONBin(id, quarryData);
                 
                 // Reset form
                 resetForm();
-                currentQuarry = null;
+            });
+            
+            // Update quarry
+            document.getElementById('update-quarry-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in as admin first.', 'error');
+                    return;
+                }
                 
-                showNotification('Quarry deleted successfully!', 'success');
-            }
-        });
-        
-        // Image upload
-        document.getElementById('image-upload').addEventListener('change', function(e) {
-            if (!isAdmin) {
-                showNotification('Please log in as admin first.', 'error');
-                return;
-            }
-            
-            if (!currentQuarry) {
-                showNotification('Please select a quarry first.', 'error');
-                return;
-            }
-            
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const imageData = event.target.result;
-                    quarries[currentQuarry].images.push(imageData);
-                    
-                    // Update marker popup
-                    updateMarker(currentQuarry);
-                    
-                    showNotification('Image uploaded successfully!', 'success');
+                if (!currentQuarry) {
+                    showNotification('Please select a quarry to update.', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('quarry-name').value;
+                const lat = parseFloat(document.getElementById('lat').value);
+                const lng = parseFloat(document.getElementById('lng').value);
+                const description = document.getElementById('quarry-description').value;
+                const color = document.getElementById('quarry-color').value;
+                
+                if (!name || !lat || !lng) {
+                    showNotification('Please fill in at least name and coordinates.', 'error');
+                    return;
+                }
+                
+                // Update quarry data
+                const quarryData = {
+                    ...quarries[currentQuarry],
+                    name: name,
+                    coords: [lat, lng],
+                    description: description,
+                    color: color,
+                    updated: Date.now()
                 };
-                reader.readAsDataURL(file);
-            }
+                
+                // Save to JSONBin.io
+                await saveQuarryToJSONBin(currentQuarry, quarryData);
+            });
             
-            // Reset file input
-            e.target.value = '';
-        });
-        
-        // Map control buttons
-        document.getElementById('zoom-in').addEventListener('click', function() {
-            map.zoomIn();
-        });
-        
-        document.getElementById('zoom-out').addEventListener('click', function() {
-            map.zoomOut();
-        });
-        
-        document.getElementById('reset-view').addEventListener('click', function() {
-            map.fitBounds(group.getBounds().pad(0.1));
-        });
-        
+            // Delete quarry
+            document.getElementById('delete-quarry-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in as admin first.', 'error');
+                    return;
+                }
+                
+                if (!currentQuarry) {
+                    showNotification('Please select a quarry to delete.', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to delete this quarry?')) {
+                    await deleteQuarryFromJSONBin(currentQuarry);
+                    resetForm();
+                    currentQuarry = null;
+                }
+            });
+            
+            // Image upload
+            document.getElementById('image-upload').addEventListener('change', async function(e) {
+                if (!isAdmin) {
+                    showNotification('Please log in as admin first.', 'error');
+                    return;
+                }
+                
+                if (!currentQuarry) {
+                    showNotification('Please select a quarry first.', 'error');
+                    return;
+                }
+                
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async function(event) {
+                        const imageData = event.target.result;
+                        const quarryData = {
+                            ...quarries[currentQuarry],
+                            images: [...(quarries[currentQuarry].images || []), imageData],
+                            updated: Date.now()
+                        };
+                        
+                        // Save to JSONBin.io
+                        await saveQuarryToJSONBin(currentQuarry, quarryData);
+                    };
+                    reader.readAsDataURL(file);
+                }
+                
+                // Reset file input
+                e.target.value = '';
+            });
+            
+            // Map control buttons
+            document.getElementById('zoom-in').addEventListener('click', function() {
+                map.zoomIn();
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', function() {
+                map.zoomOut();
+            });
+            
+            document.getElementById('reset-view').addEventListener('click', function() {
+                const markerArray = Object.values(markers);
+                if (markerArray.length > 0) {
+                    const group = new L.featureGroup(markerArray);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+            });
+            
+            // Add click event to map to add new quarries (admin only)
+            map.on('click', function(e) {
+                if (isAdmin) {
+                    // If admin is logged in, prefill coordinates when clicking on the map
+                    document.getElementById('lat').value = e.latlng.lat.toFixed(5);
+                    document.getElementById('lng').value = e.latlng.lng.toFixed(5);
+                }
+            });
+        }
+
         // Helper function to highlight quarry
         function highlightQuarry(quarryId) {
             // Remove active class from all quarry items
@@ -1048,24 +1192,31 @@
             });
             
             // Add active class to selected quarry
-            document.querySelector(`.quarry-item[data-id="${quarryId}"]`).classList.add('active');
+            const quarryItem = document.querySelector(`.quarry-item[data-id="${quarryId}"]`);
+            if (quarryItem) {
+                quarryItem.classList.add('active');
+            }
             
             // Open popup for the selected quarry
-            markers[quarryId].openPopup();
+            if (markers[quarryId]) {
+                markers[quarryId].openPopup();
+            }
             
             // If admin, update the admin panel
             if (isAdmin) {
                 const quarry = quarries[quarryId];
-                document.getElementById('quarry-name').value = quarry.name;
-                document.getElementById('lat').value = quarry.coords[0];
-                document.getElementById('lng').value = quarry.coords[1];
-                document.getElementById('quarry-description').value = quarry.description;
-                document.getElementById('quarry-color').value = quarry.color;
-                document.getElementById('color-preview').style.backgroundColor = quarry.color;
-                currentQuarry = quarryId;
+                if (quarry) {
+                    document.getElementById('quarry-name').value = quarry.name;
+                    document.getElementById('lat').value = quarry.coords[0];
+                    document.getElementById('lng').value = quarry.coords[1];
+                    document.getElementById('quarry-description').value = quarry.description;
+                    document.getElementById('quarry-color').value = quarry.color;
+                    document.getElementById('color-preview').style.backgroundColor = quarry.color;
+                    currentQuarry = quarryId;
+                }
             }
         }
-        
+
         // Helper function to reset form
         function resetForm() {
             document.getElementById('quarry-name').value = '';
@@ -1076,7 +1227,7 @@
             document.getElementById('color-preview').style.backgroundColor = '#3498db';
             document.getElementById('image-upload').value = '';
         }
-        
+
         // Function to show notification
         function showNotification(message, type) {
             const notification = document.getElementById('notification');
@@ -1086,15 +1237,17 @@
                 notification.style.backgroundColor = '#2ecc71';
             } else if (type === 'error') {
                 notification.style.backgroundColor = '#e74c3c';
+            } else if (type === 'warning') {
+                notification.style.backgroundColor = '#f39c12';
             }
             
             notification.style.display = 'block';
             
             setTimeout(() => {
                 notification.style.display = 'none';
-            }, 3000);
+            }, 4000);
         }
-        
+
         // Function to open image in full view
         window.openImage = function(imageSrc) {
             const imageWindow = window.open('', '_blank');
@@ -1107,15 +1260,16 @@
                 </html>
             `);
         };
-        
-        // Add click event to map to add new quarries (admin only)
-        map.on('click', function(e) {
-            if (isAdmin) {
-                // If admin is logged in, prefill coordinates when clicking on the map
-                document.getElementById('lat').value = e.latlng.lat.toFixed(5);
-                document.getElementById('lng').value = e.latlng.lng.toFixed(5);
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
             }
         });
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
