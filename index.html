@@ -34,6 +34,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
         
         @media (max-width: 768px) {
@@ -521,7 +522,7 @@
         @media (max-width: 768px) {
             .map-controls {
                 top: 70px;
-                right: 10px;
+                right: 60px;
                 padding: 0.4rem;
             }
         }
@@ -710,7 +711,7 @@
         .mobile-toggle {
             position: absolute;
             top: 70px;
-            left: 10px;
+            right: 10px;
             background: #3498db;
             color: white;
             border: none;
@@ -739,9 +740,14 @@
             background: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
             padding: 0.8rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.15),
+                0 1px 3px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
             z-index: 1000;
             display: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
         }
         
         @media (max-width: 768px) {
@@ -757,6 +763,22 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .mobile-coordinate-value {
+            font-size: 0.8rem;
+            color: #2c3e50;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 0.4rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            word-break: break-all;
+            box-shadow: 
+                inset 0 1px 3px rgba(0, 0, 0, 0.1),
+                0 1px 0 rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+            font-weight: 500;
         }
         
         .overlay {
@@ -793,6 +815,24 @@
             .sidebar-close {
                 display: block;
             }
+        }
+        
+        /* Enhanced coordinate styling */
+        .coordinate-value, .mobile-coordinate-value {
+            position: relative;
+        }
+        
+        .coordinate-value::before,
+        .mobile-coordinate-value::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 4px;
+            z-index: -1;
         }
     </style>
 </head>
@@ -979,19 +1019,19 @@
             <div class="coordinates-grid">
                 <div class="coordinate-item">
                     <div class="coordinate-label">NW</div>
-                    <div class="coordinate-value" id="mobile-nw-coord">32.29353°, 36.10995°</div>
+                    <div class="mobile-coordinate-value" id="mobile-nw-coord">32.29353°, 36.10995°</div>
                 </div>
                 <div class="coordinate-item">
                     <div class="coordinate-label">NE</div>
-                    <div class="coordinate-value" id="mobile-ne-coord">32.29288°, 36.2088°</div>
+                    <div class="mobile-coordinate-value" id="mobile-ne-coord">32.29288°, 36.2088°</div>
                 </div>
                 <div class="coordinate-item">
                     <div class="coordinate-label">SW</div>
-                    <div class="coordinate-value" id="mobile-sw-coord">32.24286°, 36.11005°</div>
+                    <div class="mobile-coordinate-value" id="mobile-sw-coord">32.24286°, 36.11005°</div>
                 </div>
                 <div class="coordinate-item">
                     <div class="coordinate-label">SE</div>
-                    <div class="coordinate-value" id="mobile-se-coord">32.24695°, 36.2087°</div>
+                    <div class="mobile-coordinate-value" id="mobile-se-coord">32.24695°, 36.2087°</div>
                 </div>
             </div>
         </div>
