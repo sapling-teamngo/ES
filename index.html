@@ -6,10 +6,10 @@
     <title>Field Quarries - Online Interactive Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Add Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -711,7 +711,6 @@
             color: #2980b9;
         }
         
-        /* Mobile-specific additions */
         .mobile-toggle {
             position: absolute;
             top: 50px;
@@ -821,25 +820,6 @@
             }
         }
         
-        /* Enhanced coordinate styling */
-        .coordinate-value, .mobile-coordinate-value {
-            position: relative;
-        }
-        
-        .coordinate-value::before,
-        .mobile-coordinate-value::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            border-radius: 4px;
-            z-index: -1;
-        }
-
-        /* Image upload improvements */
         .image-upload-container {
             border: 2px dashed #3498db;
             border-radius: 8px;
@@ -935,7 +915,20 @@
             transition: width 0.3s;
         }
 
-        /* Connection error styling */
+        .auth-user {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin-left: 1rem;
+        }
+        
+        .user-email {
+            font-size: 0.9rem;
+        }
+
         .connection-error {
             background: #f8d7da;
             color: #721c24;
@@ -952,6 +945,14 @@
 
         .retry-btn:hover {
             background: #c0392b;
+        }
+
+        .demo-credentials {
+            background: #e8f4fd;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
         }
     </style>
 </head>
@@ -988,6 +989,10 @@
             <div class="connection-status">
                 <div class="admin-indicator" id="admin-indicator">
                     <i class="fas fa-user-shield"></i> Admin Mode
+                </div>
+                <div id="auth-user" class="auth-user hidden">
+                    <i class="fas fa-user"></i>
+                    <span class="user-email" id="user-email"></span>
                 </div>
                 <div class="online-indicator" id="online-indicator">
                     <i class="fas fa-cloud"></i> Online
@@ -1043,8 +1048,8 @@
                                 <h3><i class="fas fa-sign-in-alt"></i> Admin Login</h3>
                                 <div class="login-form">
                                     <div class="form-group">
-                                        <label for="username">Username</label>
-                                        <input type="text" id="username" placeholder="Enter username">
+                                        <label for="email">Email</label>
+                                        <input type="email" id="email" placeholder="Enter admin email">
                                     </div>
                                     <div class="form-group">
                                         <label for="password">Password</label>
@@ -1053,6 +1058,11 @@
                                     <button id="login-btn">
                                         <i class="fas fa-key"></i> Login
                                     </button>
+                                    <div class="demo-credentials">
+                                        <strong>Demo Account:</strong><br>
+                                        Email: admin@fieldquarries.com<br>
+                                        Password: admin123
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1120,16 +1130,6 @@
                                 <div class="data-management">
                                     <h3><i class="fas fa-cloud"></i> Real-time Sync</h3>
                                     <p>Changes are automatically synchronized across all devices.</p>
-                                    
-                                    <div class="instructions">
-                                        <h4>How it works:</h4>
-                                        <ul>
-                                            <li>All changes are saved to Firebase cloud storage</li>
-                                            <li>Other users see updates in real-time</li>
-                                            <li>No manual export/import needed</li>
-                                            <li>Works across all devices and browsers</li>
-                                        </ul>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1191,7 +1191,7 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     
     <script>
-        // Firebase Configuration - Your production config
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBZGN_Qf3XsAZU3JBmSZdcD78yfvQhSXms",
             authDomain: "interactive-map-95fa0.firebaseapp.com",
@@ -1204,21 +1204,20 @@
         // Initialize Firebase
         let db = null;
         let storage = null;
+        let auth = null;
         
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             storage = firebase.storage();
+            auth = firebase.auth();
             console.log('Firebase initialized successfully');
         } catch (error) {
             console.error('Firebase initialization error:', error);
-            showConnectionError('Failed to initialize Firebase: ' + error.message);
         }
 
-        // Initialize the map with original coordinates and scale
+        // Initialize the map
         const map = L.map('map').setView([32.268, 36.159], 13);
-        
-        // Add a tile layer (using OpenStreetMap as base)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
@@ -1238,27 +1237,16 @@
             const mapBounds = map.getBounds();
             const zoom = map.getZoom();
             
-            // Update corner coordinates
-            document.getElementById('nw-coord').textContent = 
-                `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
-            document.getElementById('ne-coord').textContent = 
-                `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
-            document.getElementById('sw-coord').textContent = 
-                `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
-            document.getElementById('se-coord').textContent = 
-                `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
+            document.getElementById('nw-coord').textContent = `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
+            document.getElementById('ne-coord').textContent = `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
+            document.getElementById('sw-coord').textContent = `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
+            document.getElementById('se-coord').textContent = `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
             
-            // Update mobile coordinates
-            document.getElementById('mobile-nw-coord').textContent = 
-                `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
-            document.getElementById('mobile-ne-coord').textContent = 
-                `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
-            document.getElementById('mobile-sw-coord').textContent = 
-                `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
-            document.getElementById('mobile-se-coord').textContent = 
-                `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
+            document.getElementById('mobile-nw-coord').textContent = `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
+            document.getElementById('mobile-ne-coord').textContent = `${mapBounds.getNorth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
+            document.getElementById('mobile-sw-coord').textContent = `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getWest().toFixed(5)}°`;
+            document.getElementById('mobile-se-coord').textContent = `${mapBounds.getSouth().toFixed(5)}°, ${mapBounds.getEast().toFixed(5)}°`;
             
-            // Update scale based on zoom level
             let scale;
             if (zoom <= 10) scale = "1:500000";
             else if (zoom === 11) scale = "1:250000";
@@ -1301,6 +1289,72 @@
             document.getElementById('connection-error').classList.add('hidden');
         }
 
+        // Authentication functions
+        async function loginUser(email, password) {
+            try {
+                showNotification('Signing in...', 'success');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                isAdmin = true;
+                showAdminUI();
+                showNotification('Login successful!', 'success');
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMessage = 'Login failed';
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'User not found. Please check your email.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Incorrect password.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email address.';
+                }
+                showNotification(errorMessage, 'error');
+            }
+        }
+
+        function showAdminUI() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('admin-section').classList.remove('hidden');
+            document.getElementById('admin-indicator').style.display = 'block';
+            document.getElementById('auth-user').classList.remove('hidden');
+            if (auth.currentUser) {
+                document.getElementById('user-email').textContent = auth.currentUser.email;
+            }
+        }
+
+        function hideAdminUI() {
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('admin-section').classList.add('hidden');
+            document.getElementById('admin-indicator').style.display = 'none';
+            document.getElementById('auth-user').classList.add('hidden');
+            resetForm();
+        }
+
+        async function logoutUser() {
+            try {
+                await auth.signOut();
+                isAdmin = false;
+                currentQuarry = null;
+                hideAdminUI();
+                showNotification('Logged out successfully', 'success');
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        // Auth state listener
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                isAdmin = true;
+                showAdminUI();
+            } else {
+                isAdmin = false;
+                hideAdminUI();
+            }
+        });
+
         // Load quarries from Firebase
         async function loadQuarriesFromFirebase() {
             if (!db) {
@@ -1312,9 +1366,8 @@
             hideConnectionError();
             
             try {
-                // Set up real-time listener for quarries
                 if (unsubscribeQuarries) {
-                    unsubscribeQuarries(); // Unsubscribe from previous listener
+                    unsubscribeQuarries();
                 }
                 
                 unsubscribeQuarries = db.collection('quarries').onSnapshot(snapshot => {
@@ -1323,7 +1376,6 @@
                         quarries[doc.id] = doc.data();
                     });
                     
-                    // Update UI
                     refreshMapAndList();
                     updateLegend();
                     
@@ -1378,40 +1430,9 @@
                             images: [],
                             created: Date.now(),
                             updated: Date.now()
-                        },
-                        'day1-quarry3': {
-                            id: 'day1-quarry3',
-                            coords: [32.26052, 36.15644],
-                            name: 'Day 1: Quarry 3',
-                            description: 'Third quarry surveyed on day 1. Smaller in scale but with interesting geological features.',
-                            color: '#e74c3c',
-                            images: [],
-                            created: Date.now(),
-                            updated: Date.now()
-                        },
-                        'day2-quarry1': {
-                            id: 'day2-quarry1',
-                            coords: [32.27659, 36.14886],
-                            name: 'Day 2: Quarry 1',
-                            description: 'First quarry from day 2. Larger excavation area with multiple access points.',
-                            color: '#3498db',
-                            images: [],
-                            created: Date.now(),
-                            updated: Date.now()
-                        },
-                        'day2-quarry2': {
-                            id: 'day2-quarry2',
-                            coords: [32.27537, 36.14820],
-                            name: 'Day 2: Quarry 2',
-                            description: 'Second quarry from day 2. Deep excavation with visible rock layers.',
-                            color: '#3498db',
-                            images: [],
-                            created: Date.now(),
-                            updated: Date.now()
                         }
                     };
                     
-                    // Save each quarry to Firebase
                     const batch = db.batch();
                     Object.entries(defaultQuarries).forEach(([id, quarry]) => {
                         const quarryRef = db.collection('quarries').doc(id);
@@ -1434,7 +1455,6 @@
                 
                 uploadTask.on('state_changed',
                     (snapshot) => {
-                        // Progress tracking
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                         document.getElementById('image-progress-bar').style.width = progress + '%';
                     },
@@ -1443,7 +1463,6 @@
                         reject(error);
                     },
                     async () => {
-                        // Upload completed successfully
                         try {
                             const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
                             resolve(downloadURL);
@@ -1457,25 +1476,22 @@
 
         // Save quarry to Firebase
         async function saveQuarryToFirebase(quarryId, quarryData) {
-            if (!db) {
-                showNotification('Database not connected', 'error');
+            if (!isAdmin) {
+                showNotification('Please log in first', 'error');
                 return;
             }
 
             updateSyncStatus('syncing', 'Saving data...');
             
             try {
-                // Update the quarry data
                 quarryData.updated = Date.now();
                 if (!quarryData.created) {
                     quarryData.created = Date.now();
                 }
                 
-                // Handle image uploads if there are any
                 if (uploadedImages.length > 0) {
                     document.getElementById('image-progress').style.display = 'block';
                     
-                    // Upload each image
                     for (let i = 0; i < uploadedImages.length; i++) {
                         const file = uploadedImages[i];
                         try {
@@ -1483,12 +1499,12 @@
                             quarryData.images = [...(quarryData.images || []), imageUrl];
                         } catch (error) {
                             console.error('Error uploading image:', error);
-                            showNotification(`Error uploading image: ${file.name}`, 'error');
+                            showNotification(`Error uploading: ${file.name}`, 'error');
                         }
                     }
                     
                     document.getElementById('image-progress').style.display = 'none';
-                    uploadedImages = []; // Clear uploaded images array
+                    uploadedImages = [];
                     updateUploadedImagesList();
                 }
                 
@@ -1506,15 +1522,14 @@
 
         // Delete quarry from Firebase
         async function deleteQuarryFromFirebase(quarryId) {
-            if (!db) {
-                showNotification('Database not connected', 'error');
+            if (!isAdmin) {
+                showNotification('Please log in first', 'error');
                 return;
             }
 
             updateSyncStatus('syncing', 'Deleting...');
             
             try {
-                // Delete associated images from storage first
                 const quarry = quarries[quarryId];
                 if (quarry.images && quarry.images.length > 0) {
                     const deletePromises = quarry.images.map(async (imageUrl) => {
@@ -1545,19 +1560,16 @@
             const legendItems = document.getElementById('legend-items');
             legendItems.innerHTML = '';
             
-            // Get unique colors and their corresponding quarry names
             const colorGroups = {};
             
             Object.values(quarries).forEach(quarry => {
                 if (!colorGroups[quarry.color]) {
                     colorGroups[quarry.color] = new Set();
                 }
-                // Extract base name without numbers for grouping
                 const baseName = quarry.name.replace(/\s*\d+$/, '');
                 colorGroups[quarry.color].add(baseName);
             });
             
-            // Create legend items for each color group
             Object.entries(colorGroups).forEach(([color, names]) => {
                 const legendItem = document.createElement('div');
                 legendItem.className = 'legend-item';
@@ -1574,17 +1586,14 @@
 
         // Refresh map and list
         function refreshMapAndList() {
-            // Remove all existing markers
             Object.keys(markers).forEach(id => {
                 if (markers[id]) {
                     map.removeLayer(markers[id]);
                 }
             });
             
-            // Clear markers object
             Object.keys(markers).forEach(key => delete markers[key]);
             
-            // Add new markers
             Object.keys(quarries).forEach(id => updateMarker(id));
             renderQuarryList();
         }
@@ -1609,7 +1618,6 @@
                 
                 quarryItem.addEventListener('click', function() {
                     highlightQuarry(quarry.id);
-                    // On mobile, close sidebar after selection
                     if (window.innerWidth <= 768) {
                         closeSidebar();
                     }
@@ -1624,12 +1632,10 @@
             const quarry = quarries[quarryId];
             if (!quarry) return;
             
-            // Remove existing marker if it exists
             if (markers[quarryId]) {
                 map.removeLayer(markers[quarryId]);
             }
             
-            // Create custom icon
             const customIcon = L.divIcon({
                 className: 'custom-marker',
                 html: `<div style="background-color:${quarry.color}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>`,
@@ -1637,10 +1643,8 @@
                 iconAnchor: [13, 13]
             });
             
-            // Create marker
             const marker = L.marker(quarry.coords, { icon: customIcon }).addTo(map);
             
-            // Create popup content
             let popupContent = `<h3>${quarry.name}</h3>`;
             popupContent += `<p><strong>Coordinates:</strong> ${quarry.coords[1].toFixed(5)}°, ${quarry.coords[0].toFixed(5)}°</p>`;
             popupContent += `<p>${quarry.description}</p>`;
@@ -1656,7 +1660,6 @@
             marker.bindPopup(popupContent);
             markers[quarryId] = marker;
             
-            // Add click event to marker
             marker.on('click', function() {
                 highlightQuarry(quarryId);
             });
@@ -1669,7 +1672,6 @@
             sidebar.classList.toggle('active');
             overlay.classList.toggle('active');
             
-            // Load data only when opening sidebar if not already loaded
             if (!dataLoaded && sidebar.classList.contains('active')) {
                 loadQuarriesFromFirebase();
             }
@@ -1687,12 +1689,10 @@
             const uploadContainer = document.getElementById('image-upload-container');
             const fileInput = document.getElementById('image-upload');
             
-            // Click to upload
             uploadContainer.addEventListener('click', () => {
                 fileInput.click();
             });
             
-            // Drag and drop functionality
             uploadContainer.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadContainer.classList.add('dragover');
@@ -1709,7 +1709,6 @@
                 handleImageFiles(files);
             });
             
-            // File input change
             fileInput.addEventListener('change', (e) => {
                 handleImageFiles(e.target.files);
             });
@@ -1717,7 +1716,7 @@
         
         function handleImageFiles(files) {
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-            const maxSize = 5 * 1024 * 1024; // 5MB
+            const maxSize = 5 * 1024 * 1024;
             
             for (let file of files) {
                 if (!validTypes.includes(file.type)) {
@@ -1744,7 +1743,6 @@
                 const item = document.createElement('div');
                 item.className = 'uploaded-image-item';
                 
-                // Create preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = document.createElement('img');
@@ -1764,7 +1762,6 @@
                 container.appendChild(item);
             });
             
-            // Add event listeners to remove buttons
             document.querySelectorAll('.remove-image-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const index = parseInt(e.target.closest('.remove-image-btn').dataset.index);
@@ -1774,246 +1771,21 @@
             });
         }
 
-        // Initialize the application
-        function initApp() {
-            // Initial update of coordinates and scale
-            updateMapInfo();
-            
-            // Set up event listeners
-            setupEventListeners();
-            setupImageUpload();
-            
-            // Initialize Firebase and load data
-            if (db) {
-                initializeDefaultData().then(() => {
-                    loadQuarriesFromFirebase();
-                });
-            } else {
-                showConnectionError('Firebase failed to initialize. Please check your configuration.');
-            }
-        }
-
-        // Set up all event listeners
-        function setupEventListeners() {
-            // Update map info when map moves or zooms
-            map.on('moveend', updateMapInfo);
-            map.on('zoomend', updateMapInfo);
-            
-            // Update color preview when color picker changes
-            document.getElementById('quarry-color').addEventListener('input', function() {
-                document.getElementById('color-preview').style.backgroundColor = this.value;
-            });
-            
-            // Refresh data button - ONLY way to manually refresh data
-            document.getElementById('refresh-data').addEventListener('click', function() {
-                loadQuarriesFromFirebase();
-            });
-            
-            // Retry connection button
-            document.getElementById('retry-connection').addEventListener('click', function() {
-                loadQuarriesFromFirebase();
-            });
-            
-            // Reset view button - goes back to original coordinates and scale
-            document.getElementById('reset-view').addEventListener('click', function() {
-                map.setView([32.268, 36.159], 13);
-                showNotification('Map view reset to original position', 'success');
-            });
-            
-            // Tab functionality
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    
-                    // Update active tab button
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Update active tab panel
-                    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-            
-            // Login function
-            document.getElementById('login-btn').addEventListener('click', function() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                
-                // Simple authentication for demo - replace with Firebase Authentication for production
-                if (username === 'admin' && password === 'map2025') {
-                    isAdmin = true;
-                    document.getElementById('login-section').classList.add('hidden');
-                    document.getElementById('admin-section').classList.remove('hidden');
-                    document.getElementById('admin-indicator').style.display = 'block';
-                    showNotification('Admin access granted', 'success');
-                } else {
-                    showNotification('Invalid credentials. Try admin/map2025 for demo.', 'error');
-                }
-            });
-            
-            // Logout function
-            document.getElementById('logout-btn').addEventListener('click', function() {
-                isAdmin = false;
-                document.getElementById('login-section').classList.remove('hidden');
-                document.getElementById('admin-section').classList.add('hidden');
-                document.getElementById('admin-indicator').style.display = 'none';
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-                currentQuarry = null;
-                resetForm();
-                showNotification('Logged out successfully', 'success');
-            });
-            
-            // Add new quarry
-            document.getElementById('add-quarry-btn').addEventListener('click', async function() {
-                if (!isAdmin) {
-                    showNotification('Please log in as admin first.', 'error');
-                    return;
-                }
-                
-                const name = document.getElementById('quarry-name').value;
-                const lat = parseFloat(document.getElementById('lat').value);
-                const lng = parseFloat(document.getElementById('lng').value);
-                const description = document.getElementById('quarry-description').value;
-                const color = document.getElementById('quarry-color').value;
-                
-                if (!name || !lat || !lng) {
-                    showNotification('Please fill in at least name and coordinates.', 'error');
-                    return;
-                }
-                
-                // Generate a unique ID
-                const id = 'quarry-' + Date.now();
-                
-                // Create quarry data
-                const quarryData = {
-                    id: id,
-                    coords: [lat, lng],
-                    name: name,
-                    description: description,
-                    color: color,
-                    images: [],
-                    created: Date.now(),
-                    updated: Date.now()
-                };
-                
-                // Save to Firebase
-                await saveQuarryToFirebase(id, quarryData);
-                
-                // Update legend
-                updateLegend();
-                
-                // Reset form
-                resetForm();
-            });
-            
-            // Update quarry
-            document.getElementById('update-quarry-btn').addEventListener('click', async function() {
-                if (!isAdmin) {
-                    showNotification('Please log in as admin first.', 'error');
-                    return;
-                }
-                
-                if (!currentQuarry) {
-                    showNotification('Please select a quarry to update.', 'error');
-                    return;
-                }
-                
-                const name = document.getElementById('quarry-name').value;
-                const lat = parseFloat(document.getElementById('lat').value);
-                const lng = parseFloat(document.getElementById('lng').value);
-                const description = document.getElementById('quarry-description').value;
-                const color = document.getElementById('quarry-color').value;
-                
-                if (!name || !lat || !lng) {
-                    showNotification('Please fill in at least name and coordinates.', 'error');
-                    return;
-                }
-                
-                // Update quarry data
-                const quarryData = {
-                    ...quarries[currentQuarry],
-                    name: name,
-                    coords: [lat, lng],
-                    description: description,
-                    color: color,
-                    updated: Date.now()
-                };
-                
-                // Save to Firebase
-                await saveQuarryToFirebase(currentQuarry, quarryData);
-                
-                // Update legend
-                updateLegend();
-            });
-            
-            // Delete quarry
-            document.getElementById('delete-quarry-btn').addEventListener('click', async function() {
-                if (!isAdmin) {
-                    showNotification('Please log in as admin first.', 'error');
-                    return;
-                }
-                
-                if (!currentQuarry) {
-                    showNotification('Please select a quarry to delete.', 'error');
-                    return;
-                }
-                
-                if (confirm('Are you sure you want to delete this quarry? This will also delete all associated images.')) {
-                    await deleteQuarryFromFirebase(currentQuarry);
-                    
-                    // Update legend
-                    updateLegend();
-                    
-                    resetForm();
-                    currentQuarry = null;
-                }
-            });
-            
-            // Map control buttons
-            document.getElementById('zoom-in').addEventListener('click', function() {
-                map.zoomIn();
-            });
-            
-            document.getElementById('zoom-out').addEventListener('click', function() {
-                map.zoomOut();
-            });
-            
-            // Mobile sidebar toggle
-            document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
-            document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
-            document.getElementById('overlay').addEventListener('click', closeSidebar);
-            
-            // Add click event to map to add new quarries (admin only)
-            map.on('click', function(e) {
-                if (isAdmin) {
-                    // If admin is logged in, prefill coordinates when clicking on the map
-                    document.getElementById('lat').value = e.latlng.lat.toFixed(5);
-                    document.getElementById('lng').value = e.latlng.lng.toFixed(5);
-                }
-            });
-        }
-
         // Helper function to highlight quarry
         function highlightQuarry(quarryId) {
-            // Remove active class from all quarry items
             document.querySelectorAll('.quarry-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            // Add active class to selected quarry
             const quarryItem = document.querySelector(`.quarry-item[data-id="${quarryId}"]`);
             if (quarryItem) {
                 quarryItem.classList.add('active');
             }
             
-            // Open popup for the selected quarry
             if (markers[quarryId]) {
                 markers[quarryId].openPopup();
             }
             
-            // If admin, update the admin panel
             if (isAdmin) {
                 const quarry = quarries[quarryId];
                 if (quarry) {
@@ -2025,7 +1797,6 @@
                     document.getElementById('color-preview').style.backgroundColor = quarry.color;
                     currentQuarry = quarryId;
                     
-                    // Clear uploaded images when switching quarries
                     uploadedImages = [];
                     updateUploadedImagesList();
                 }
@@ -2041,7 +1812,6 @@
             document.getElementById('quarry-color').value = '#3498db';
             document.getElementById('color-preview').style.backgroundColor = '#3498db';
             
-            // Clear uploaded images
             uploadedImages = [];
             updateUploadedImagesList();
             document.getElementById('image-progress').style.display = 'none';
@@ -2079,6 +1849,176 @@
                 </html>
             `);
         };
+
+        // Initialize the application
+        function initApp() {
+            updateMapInfo();
+            setupEventListeners();
+            setupImageUpload();
+            
+            if (db) {
+                initializeDefaultData().then(() => {
+                    loadQuarriesFromFirebase();
+                });
+            }
+        }
+
+        // Set up all event listeners
+        function setupEventListeners() {
+            map.on('moveend', updateMapInfo);
+            map.on('zoomend', updateMapInfo);
+            
+            document.getElementById('quarry-color').addEventListener('input', function() {
+                document.getElementById('color-preview').style.backgroundColor = this.value;
+            });
+            
+            document.getElementById('refresh-data').addEventListener('click', function() {
+                loadQuarriesFromFirebase();
+            });
+            
+            document.getElementById('retry-connection').addEventListener('click', function() {
+                loadQuarriesFromFirebase();
+            });
+            
+            document.getElementById('reset-view').addEventListener('click', function() {
+                map.setView([32.268, 36.159], 13);
+                showNotification('Map view reset to original position', 'success');
+            });
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            document.getElementById('login-btn').addEventListener('click', function() {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                if (!email || !password) {
+                    showNotification('Please enter both email and password', 'error');
+                    return;
+                }
+                
+                loginUser(email, password);
+            });
+            
+            document.getElementById('logout-btn').addEventListener('click', logoutUser);
+            
+            document.getElementById('add-quarry-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('quarry-name').value;
+                const lat = parseFloat(document.getElementById('lat').value);
+                const lng = parseFloat(document.getElementById('lng').value);
+                const description = document.getElementById('quarry-description').value;
+                const color = document.getElementById('quarry-color').value;
+                
+                if (!name || !lat || !lng) {
+                    showNotification('Please fill in at least name and coordinates', 'error');
+                    return;
+                }
+                
+                const id = 'quarry-' + Date.now();
+                
+                const quarryData = {
+                    id: id,
+                    coords: [lat, lng],
+                    name: name,
+                    description: description,
+                    color: color,
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                };
+                
+                await saveQuarryToFirebase(id, quarryData);
+                updateLegend();
+                resetForm();
+            });
+            
+            document.getElementById('update-quarry-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                if (!currentQuarry) {
+                    showNotification('Please select a quarry to update', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('quarry-name').value;
+                const lat = parseFloat(document.getElementById('lat').value);
+                const lng = parseFloat(document.getElementById('lng').value);
+                const description = document.getElementById('quarry-description').value;
+                const color = document.getElementById('quarry-color').value;
+                
+                if (!name || !lat || !lng) {
+                    showNotification('Please fill in at least name and coordinates', 'error');
+                    return;
+                }
+                
+                const quarryData = {
+                    ...quarries[currentQuarry],
+                    name: name,
+                    coords: [lat, lng],
+                    description: description,
+                    color: color,
+                    updated: Date.now()
+                };
+                
+                await saveQuarryToFirebase(currentQuarry, quarryData);
+                updateLegend();
+            });
+            
+            document.getElementById('delete-quarry-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                if (!currentQuarry) {
+                    showNotification('Please select a quarry to delete', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to delete this quarry? This will also delete all associated images.')) {
+                    await deleteQuarryFromFirebase(currentQuarry);
+                    updateLegend();
+                    resetForm();
+                    currentQuarry = null;
+                }
+            });
+            
+            document.getElementById('zoom-in').addEventListener('click', function() {
+                map.zoomIn();
+            });
+            
+            document.getElementById('zoom-out').addEventListener('click', function() {
+                map.zoomOut();
+            });
+            
+            document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+            document.getElementById('overlay').addEventListener('click', closeSidebar);
+            
+            map.on('click', function(e) {
+                if (isAdmin) {
+                    document.getElementById('lat').value = e.latlng.lat.toFixed(5);
+                    document.getElementById('lng').value = e.latlng.lng.toFixed(5);
+                }
+            });
+        }
 
         // Initialize the application when the page loads
         document.addEventListener('DOMContentLoaded', initApp);
