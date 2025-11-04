@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <style>
         * {
@@ -898,23 +897,6 @@
             cursor: pointer;
         }
 
-        .image-progress {
-            width: 100%;
-            height: 4px;
-            background: #e9ecef;
-            border-radius: 2px;
-            margin-top: 0.5rem;
-            overflow: hidden;
-            display: none;
-        }
-
-        .image-progress-bar {
-            height: 100%;
-            background: #3498db;
-            width: 0%;
-            transition: width 0.3s;
-        }
-
         .auth-user {
             display: flex;
             align-items: center;
@@ -955,7 +937,7 @@
             font-size: 0.85rem;
         }
 
-        /* ADDED: Storage warning style from first code */
+        /* Storage warning style */
         .storage-warning {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -1078,7 +1060,6 @@
                             </div>
                             
                             <div id="admin-section" class="hidden">
-                                <!-- ADDED: Storage warning from first code -->
                                 <div class="storage-warning">
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <strong>Note:</strong> Image storage is currently using base64 encoding. For better performance, enable Firebase Storage later.
@@ -1112,17 +1093,14 @@
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label>Upload Images</label>
+                                    <label>Upload Images (Base64 - Limited to small images)</label>
                                     <div class="image-upload-container" id="image-upload-container">
                                         <div class="upload-icon">
                                             <i class="fas fa-cloud-upload-alt"></i>
                                         </div>
-                                        <div class="upload-text">Drag & drop images here or click to browse</div>
-                                        <div class="upload-hint">Supports JPG, PNG, GIF (Max 5MB each)</div>
+                                        <div class="upload-text">Click to browse images</div>
+                                        <div class="upload-hint">Supports JPG, PNG (Max 1MB recommended)</div>
                                         <input type="file" id="image-upload" accept="image/*" multiple style="display: none">
-                                    </div>
-                                    <div class="image-progress" id="image-progress">
-                                        <div class="image-progress-bar" id="image-progress-bar"></div>
                                     </div>
                                     <div class="uploaded-images" id="uploaded-images">
                                         <!-- Uploaded images will appear here -->
@@ -1142,11 +1120,6 @@
                                     <button id="logout-btn" class="btn-secondary">
                                         <i class="fas fa-sign-out-alt"></i> Logout
                                     </button>
-                                </div>
-
-                                <div class="data-management">
-                                    <h3><i class="fas fa-cloud"></i> Real-time Sync</h3>
-                                    <p>Changes are automatically synchronized across all devices.</p>
                                 </div>
                             </div>
                         </div>
@@ -1218,17 +1191,15 @@
             appId: "1:643045400319:web:090de62b50c0e838ccf6ca"
         };
 
-        // Initialize Firebase
+        // Initialize Firebase WITHOUT Storage
         let db = null;
-        let storage = null;
         let auth = null;
         
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
-            storage = firebase.storage();
             auth = firebase.auth();
-            console.log('Firebase initialized successfully');
+            console.log('Firebase initialized successfully (without Storage)');
         } catch (error) {
             console.error('Firebase initialization error:', error);
         }
@@ -1313,23 +1284,10 @@
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 
-                // Check if this is the specific admin user
-                if (user.uid === 'JkRBHlNIQwNo3YHDh1iiKYPB6Fd2') {
-                    isAdmin = true;
-                    showAdminUI();
-                    showNotification('Admin login successful!', 'success');
-                    
-                    // Create admin user document in Firestore
-                    await db.collection('users').doc(user.uid).set({
-                        email: user.email,
-                        admin: true,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true });
-                    
-                } else {
-                    await auth.signOut();
-                    showNotification('Access denied: Admin privileges required', 'error');
-                }
+                // For now, any authenticated user is admin
+                isAdmin = true;
+                showAdminUI();
+                showNotification('Admin login successful!', 'success');
                 
             } catch (error) {
                 console.error('Login error:', error);
@@ -1377,7 +1335,7 @@
 
         // Auth state listener
         auth.onAuthStateChanged((user) => {
-            if (user && user.uid === 'JkRBHlNIQwNo3YHDh1iiKYPB6Fd2') {
+            if (user) {
                 isAdmin = true;
                 showAdminUI();
             } else {
@@ -1478,34 +1436,17 @@
             }
         }
 
-        // Upload image to Firebase Storage
-        async function uploadImageToFirebase(file, quarryId) {
+        // Convert image to base64 (NO STORAGE NEEDED)
+        function imageToBase64(file) {
             return new Promise((resolve, reject) => {
-                const fileName = `${quarryId}/${Date.now()}_${file.name}`;
-                const uploadTask = storage.ref(`quarry-images/${fileName}`).put(file);
-                
-                uploadTask.on('state_changed',
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        document.getElementById('image-progress-bar').style.width = progress + '%';
-                    },
-                    (error) => {
-                        console.error('Upload error:', error);
-                        reject(error);
-                    },
-                    async () => {
-                        try {
-                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                            resolve(downloadURL);
-                        } catch (error) {
-                            reject(error);
-                        }
-                    }
-                );
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
             });
         }
 
-        // Save quarry to Firebase
+        // Save quarry to Firebase (WITH BASE64 IMAGES)
         async function saveQuarryToFirebase(quarryId, quarryData) {
             if (!isAdmin) {
                 showNotification('Please log in first', 'error');
@@ -1520,27 +1461,20 @@
                     quarryData.created = Date.now();
                 }
                 
-                // Add user info to track who made changes
-                if (auth.currentUser) {
-                    quarryData.lastModifiedBy = auth.currentUser.uid;
-                    quarryData.lastModifiedByEmail = auth.currentUser.email;
-                }
-                
+                // Handle image uploads as base64
                 if (uploadedImages.length > 0) {
-                    document.getElementById('image-progress').style.display = 'block';
-                    
                     for (let i = 0; i < uploadedImages.length; i++) {
                         const file = uploadedImages[i];
                         try {
-                            const imageUrl = await uploadImageToFirebase(file, quarryId);
-                            quarryData.images = [...(quarryData.images || []), imageUrl];
+                            // Convert image to base64
+                            const base64Image = await imageToBase64(file);
+                            quarryData.images = [...(quarryData.images || []), base64Image];
                         } catch (error) {
-                            console.error('Error uploading image:', error);
-                            showNotification(`Error uploading: ${file.name}`, 'error');
+                            console.error('Error converting image:', error);
+                            showNotification(`Error processing: ${file.name}`, 'error');
                         }
                     }
                     
-                    document.getElementById('image-progress').style.display = 'none';
                     uploadedImages = [];
                     updateUploadedImagesList();
                 }
@@ -1567,19 +1501,6 @@
             updateSyncStatus('syncing', 'Deleting...');
             
             try {
-                const quarry = quarries[quarryId];
-                if (quarry.images && quarry.images.length > 0) {
-                    const deletePromises = quarry.images.map(async (imageUrl) => {
-                        try {
-                            const imageRef = storage.refFromURL(imageUrl);
-                            await imageRef.delete();
-                        } catch (error) {
-                            console.error('Error deleting image:', error);
-                        }
-                    });
-                    await Promise.all(deletePromises);
-                }
-                
                 await db.collection('quarries').doc(quarryId).delete();
                 updateSyncStatus('online', 'Quarry deleted');
                 showNotification('Quarry deleted successfully', 'success');
@@ -1730,39 +1651,23 @@
                 fileInput.click();
             });
             
-            uploadContainer.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadContainer.classList.add('dragover');
-            });
-            
-            uploadContainer.addEventListener('dragleave', () => {
-                uploadContainer.classList.remove('dragover');
-            });
-            
-            uploadContainer.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadContainer.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                handleImageFiles(files);
-            });
-            
             fileInput.addEventListener('change', (e) => {
                 handleImageFiles(e.target.files);
             });
         }
         
         function handleImageFiles(files) {
-            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-            const maxSize = 5 * 1024 * 1024;
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            const maxSize = 1 * 1024 * 1024; // 1MB for base64
             
             for (let file of files) {
                 if (!validTypes.includes(file.type)) {
-                    showNotification('Please upload only JPG, PNG, or GIF images', 'error');
+                    showNotification('Please upload only JPG or PNG images', 'error');
                     continue;
                 }
                 
                 if (file.size > maxSize) {
-                    showNotification(`File ${file.name} is too large (max 5MB)`, 'error');
+                    showNotification(`File ${file.name} is too large (max 1MB for base64)`, 'error');
                     continue;
                 }
                 
@@ -1851,7 +1756,6 @@
             
             uploadedImages = [];
             updateUploadedImagesList();
-            document.getElementById('image-progress').style.display = 'none';
         }
 
         // Function to show notification
@@ -2029,7 +1933,7 @@
                     return;
                 }
                 
-                if (confirm('Are you sure you want to delete this quarry? This will also delete all associated images.')) {
+                if (confirm('Are you sure you want to delete this quarry?')) {
                     await deleteQuarryFromFirebase(currentQuarry);
                     updateLegend();
                     resetForm();
