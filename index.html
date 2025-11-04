@@ -424,7 +424,7 @@
         @media (max-width: 768px) {
             .quarry-coords {
                 font-size: 0.8rem;
-            }
+                }
         }
         
         .quarry-description {
@@ -954,6 +954,17 @@
             margin-top: 1rem;
             font-size: 0.85rem;
         }
+
+        /* ADDED: Storage warning style from first code */
+        .storage-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -1067,6 +1078,12 @@
                             </div>
                             
                             <div id="admin-section" class="hidden">
+                                <!-- ADDED: Storage warning from first code -->
+                                <div class="storage-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Note:</strong> Image storage is currently using base64 encoding. For better performance, enable Firebase Storage later.
+                                </div>
+                                
                                 <h3><i class="fas fa-edit"></i> Manage Quarries</h3>
                                 <div class="form-group">
                                     <label for="quarry-name">Quarry Name</label>
