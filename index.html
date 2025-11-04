@@ -1296,9 +1296,23 @@
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
                 
-                isAdmin = true;
-                showAdminUI();
-                showNotification('Login successful!', 'success');
+                // Check if this is the specific admin user
+                if (user.uid === 'JkRBHlNIQwNo3YHDh1iiKYPB6Fd2') {
+                    isAdmin = true;
+                    showAdminUI();
+                    showNotification('Admin login successful!', 'success');
+                    
+                    // Create admin user document in Firestore
+                    await db.collection('users').doc(user.uid).set({
+                        email: user.email,
+                        admin: true,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    
+                } else {
+                    await auth.signOut();
+                    showNotification('Access denied: Admin privileges required', 'error');
+                }
                 
             } catch (error) {
                 console.error('Login error:', error);
@@ -1346,7 +1360,7 @@
 
         // Auth state listener
         auth.onAuthStateChanged((user) => {
-            if (user) {
+            if (user && user.uid === 'JkRBHlNIQwNo3YHDh1iiKYPB6Fd2') {
                 isAdmin = true;
                 showAdminUI();
             } else {
@@ -1487,6 +1501,12 @@
                 quarryData.updated = Date.now();
                 if (!quarryData.created) {
                     quarryData.created = Date.now();
+                }
+                
+                // Add user info to track who made changes
+                if (auth.currentUser) {
+                    quarryData.lastModifiedBy = auth.currentUser.uid;
+                    quarryData.lastModifiedByEmail = auth.currentUser.email;
                 }
                 
                 if (uploadedImages.length > 0) {
