@@ -947,6 +947,97 @@
             margin: 1rem 0;
             font-size: 0.9rem;
         }
+
+        /* NEW STYLES FOR OUTCROP AND TRAIL TABS */
+        .outcrop-item, .trail-item {
+            background-color: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .outcrop-item:hover, .trail-item:hover {
+            background-color: #f8f9fa;
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .outcrop-item.active, .trail-item.active {
+            background-color: #e1f0fa;
+            border-color: #3498db;
+        }
+
+        .outcrop-name, .trail-name {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+
+        .outcrop-coords, .trail-coords {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+
+        .outcrop-description, .trail-description {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            color: #5d6d7e;
+        }
+
+        .outcrop-list, .trail-list {
+            flex: 1;
+        }
+
+        /* Trail drawing controls */
+        .drawing-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .drawing-controls button {
+            flex: 1;
+        }
+
+        .trail-points-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 0.5rem;
+            border: 1px solid #e1e8ed;
+            border-radius: 4px;
+            padding: 0.5rem;
+        }
+
+        .trail-point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .trail-point-item:last-child {
+            border-bottom: none;
+        }
+
+        .remove-point-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
     </style>
 </head>
 <body>
@@ -1004,6 +1095,12 @@
                     <button class="tab-btn active" data-tab="info-tab">
                         <i class="fas fa-info-circle"></i> <span class="tab-text">Information</span>
                     </button>
+                    <button class="tab-btn" data-tab="outcrop-tab">
+                        <i class="fas fa-mountain"></i> <span class="tab-text">Outcrops</span>
+                    </button>
+                    <button class="tab-btn" data-tab="trail-tab">
+                        <i class="fas fa-route"></i> <span class="tab-text">Trails</span>
+                    </button>
                     <button class="tab-btn" data-tab="admin-tab">
                         <i class="fas fa-cog"></i> <span class="tab-text">Admin Panel</span>
                     </button>
@@ -1032,6 +1129,24 @@
                         
                         <div class="quarry-list" id="quarry-list">
                             <!-- Quarry items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-panel" id="outcrop-tab">
+                        <h3><i class="fas fa-mountain"></i> Outcrop Points</h3>
+                        <p>Geological outcrop observation points with detailed information.</p>
+                        
+                        <div class="outcrop-list" id="outcrop-list">
+                            <!-- Outcrop items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-panel" id="trail-tab">
+                        <h3><i class="fas fa-route"></i> Field Trails</h3>
+                        <p>Routes taken during field surveys with waypoints.</p>
+                        
+                        <div class="trail-list" id="trail-list">
+                            <!-- Trail items will be populated by JavaScript -->
                         </div>
                     </div>
                     
@@ -1120,6 +1235,112 @@
                                     <button id="logout-btn" class="btn-secondary">
                                         <i class="fas fa-sign-out-alt"></i> Logout
                                     </button>
+                                </div>
+                                
+                                <!-- NEW OUTCROP MANAGEMENT SECTION -->
+                                <div class="data-management">
+                                    <h3><i class="fas fa-mountain"></i> Manage Outcrops</h3>
+                                    <div class="form-group">
+                                        <label for="outcrop-name">Outcrop Name</label>
+                                        <input type="text" id="outcrop-name" placeholder="Enter outcrop name">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="outcrop-coordinates">Coordinates</label>
+                                        <div class="coordinates-input">
+                                            <input type="number" id="outcrop-lat" step="0.00001" placeholder="Latitude" value="32.26">
+                                            <input type="number" id="outcrop-lng" step="0.00001" placeholder="Longitude" value="36.15">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="outcrop-description">Description</label>
+                                        <textarea id="outcrop-description" rows="3" placeholder="Enter outcrop description"></textarea>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="outcrop-rock-type">Rock Type</label>
+                                        <select id="outcrop-rock-type">
+                                            <option value="limestone">Limestone</option>
+                                            <option value="sandstone">Sandstone</option>
+                                            <option value="shale">Shale</option>
+                                            <option value="basalt">Basalt</option>
+                                            <option value="granite">Granite</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="outcrop-color">Marker Color</label>
+                                        <div class="color-picker">
+                                            <div class="color-preview" id="outcrop-color-preview" style="background-color: #9b59b6;"></div>
+                                            <input type="color" id="outcrop-color" class="color-wheel" value="#9b59b6">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="admin-controls">
+                                        <button id="add-outcrop-btn">
+                                            <i class="fas fa-plus"></i> Add Outcrop
+                                        </button>
+                                        <button id="update-outcrop-btn" class="btn-secondary">
+                                            <i class="fas fa-sync"></i> Update
+                                        </button>
+                                        <button id="delete-outcrop-btn" class="btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- NEW TRAIL MANAGEMENT SECTION -->
+                                <div class="data-management">
+                                    <h3><i class="fas fa-route"></i> Manage Trails</h3>
+                                    <div class="form-group">
+                                        <label for="trail-name">Trail Name</label>
+                                        <input type="text" id="trail-name" placeholder="Enter trail name">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="trail-description">Description</label>
+                                        <textarea id="trail-description" rows="3" placeholder="Enter trail description"></textarea>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="trail-color">Trail Color</label>
+                                        <div class="color-picker">
+                                            <div class="color-preview" id="trail-color-preview" style="background-color: #e67e22;"></div>
+                                            <input type="color" id="trail-color" class="color-wheel" value="#e67e22">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Trail Points</label>
+                                        <div class="drawing-controls">
+                                            <button id="start-drawing-trail" class="btn-success">
+                                                <i class="fas fa-draw-polygon"></i> Start Drawing
+                                            </button>
+                                            <button id="stop-drawing-trail" class="btn-secondary">
+                                                <i class="fas fa-stop"></i> Stop
+                                            </button>
+                                            <button id="clear-trail-points" class="btn-danger">
+                                                <i class="fas fa-trash"></i> Clear
+                                            </button>
+                                        </div>
+                                        <div class="trail-points-list" id="trail-points-list">
+                                            <!-- Trail points will appear here -->
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="admin-controls">
+                                        <button id="add-trail-btn">
+                                            <i class="fas fa-plus"></i> Add Trail
+                                        </button>
+                                        <button id="update-trail-btn" class="btn-secondary">
+                                            <i class="fas fa-sync"></i> Update
+                                        </button>
+                                        <button id="delete-trail-btn" class="btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1212,13 +1433,28 @@
         
         // Global variables
         let quarries = {};
+        let outcrops = {};
+        let trails = {};
         const markers = {};
+        const outcropMarkers = {};
+        const trailLayers = {};
         const quarryList = document.getElementById('quarry-list');
+        const outcropList = document.getElementById('outcrop-list');
+        const trailList = document.getElementById('trail-list');
         let isAdmin = false;
         let currentQuarry = null;
+        let currentOutcrop = null;
+        let currentTrail = null;
         let dataLoaded = false;
         let unsubscribeQuarries = null;
+        let unsubscribeOutcrops = null;
+        let unsubscribeTrails = null;
         let uploadedImages = [];
+        
+        // Trail drawing variables
+        let isDrawingTrail = false;
+        let currentTrailPoints = [];
+        let tempTrailLayer = null;
 
         // Function to update corner coordinates and scale
         function updateMapInfo() {
@@ -1326,6 +1562,8 @@
                 await auth.signOut();
                 isAdmin = false;
                 currentQuarry = null;
+                currentOutcrop = null;
+                currentTrail = null;
                 hideAdminUI();
                 showNotification('Logged out successfully', 'success');
             } catch (error) {
@@ -1392,13 +1630,64 @@
             }
         }
 
-        // Initialize with default quarries if collection is empty
+        // Load outcrops from Firebase
+        async function loadOutcropsFromFirebase() {
+            if (!db) return;
+            
+            try {
+                if (unsubscribeOutcrops) {
+                    unsubscribeOutcrops();
+                }
+                
+                unsubscribeOutcrops = db.collection('outcrops').onSnapshot(snapshot => {
+                    outcrops = {};
+                    snapshot.forEach(doc => {
+                        outcrops[doc.id] = doc.data();
+                    });
+                    
+                    refreshOutcropMapAndList();
+                    updateLegend();
+                }, error => {
+                    console.error('Error loading outcrops:', error);
+                });
+            } catch (error) {
+                console.error('Error setting up outcrops listener:', error);
+            }
+        }
+
+        // Load trails from Firebase
+        async function loadTrailsFromFirebase() {
+            if (!db) return;
+            
+            try {
+                if (unsubscribeTrails) {
+                    unsubscribeTrails();
+                }
+                
+                unsubscribeTrails = db.collection('trails').onSnapshot(snapshot => {
+                    trails = {};
+                    snapshot.forEach(doc => {
+                        trails[doc.id] = doc.data();
+                    });
+                    
+                    refreshTrailMapAndList();
+                    updateLegend();
+                }, error => {
+                    console.error('Error loading trails:', error);
+                });
+            } catch (error) {
+                console.error('Error setting up trails listener:', error);
+            }
+        }
+
+        // Initialize with default data if collections are empty
         async function initializeDefaultData() {
             if (!db) return;
             
             try {
-                const snapshot = await db.collection('quarries').get();
-                if (snapshot.empty) {
+                // Initialize quarries
+                const quarrySnapshot = await db.collection('quarries').get();
+                if (quarrySnapshot.empty) {
                     const defaultQuarries = {
                         'day1-quarry1': {
                             id: 'day1-quarry1',
@@ -1430,6 +1719,72 @@
                     
                     await batch.commit();
                     console.log('Default quarries initialized');
+                }
+                
+                // Initialize outcrops
+                const outcropSnapshot = await db.collection('outcrops').get();
+                if (outcropSnapshot.empty) {
+                    const defaultOutcrops = {
+                        'outcrop1': {
+                            id: 'outcrop1',
+                            coords: [32.265, 36.152],
+                            name: 'Limestone Outcrop A',
+                            description: 'Well-exposed limestone formation with visible bedding planes.',
+                            rockType: 'limestone',
+                            color: '#9b59b6',
+                            created: Date.now(),
+                            updated: Date.now()
+                        },
+                        'outcrop2': {
+                            id: 'outcrop2',
+                            coords: [32.262, 36.162],
+                            name: 'Sandstone Outcrop B',
+                            description: 'Cross-bedded sandstone showing sedimentary structures.',
+                            rockType: 'sandstone',
+                            color: '#9b59b6',
+                            created: Date.now(),
+                            updated: Date.now()
+                        }
+                    };
+                    
+                    const batch2 = db.batch();
+                    Object.entries(defaultOutcrops).forEach(([id, outcrop]) => {
+                        const outcropRef = db.collection('outcrops').doc(id);
+                        batch2.set(outcropRef, outcrop);
+                    });
+                    
+                    await batch2.commit();
+                    console.log('Default outcrops initialized');
+                }
+                
+                // Initialize trails
+                const trailSnapshot = await db.collection('trails').get();
+                if (trailSnapshot.empty) {
+                    const defaultTrails = {
+                        'trail1': {
+                            id: 'trail1',
+                            name: 'Field Survey Route 1',
+                            description: 'Primary survey route covering major geological features.',
+                            color: '#e67e22',
+                            points: [
+                                [32.263, 36.150],
+                                [32.262, 36.155],
+                                [32.260, 36.160],
+                                [32.258, 36.165]
+                            ],
+                            created: Date.now(),
+                            updated: Date.now()
+                        }
+                    };
+                    
+                    const batch3 = db.batch();
+                    Object.entries(defaultTrails).forEach(([id, trail]) => {
+                        const trailRef = db.collection('trails').doc(id);
+                        batch3.set(trailRef, trail);
+                    });
+                    
+                    await batch3.commit();
+                    console.log('Default trails initialized');
                 }
             } catch (error) {
                 console.error('Error initializing default data:', error);
@@ -1491,6 +1846,60 @@
             }
         }
 
+        // Save outcrop to Firebase
+        async function saveOutcropToFirebase(outcropId, outcropData) {
+            if (!isAdmin) {
+                showNotification('Please log in first', 'error');
+                return;
+            }
+
+            updateSyncStatus('syncing', 'Saving outcrop...');
+            
+            try {
+                outcropData.updated = Date.now();
+                if (!outcropData.created) {
+                    outcropData.created = Date.now();
+                }
+                
+                await db.collection('outcrops').doc(outcropId).set(outcropData);
+                updateSyncStatus('online', 'Outcrop saved successfully');
+                showNotification('Outcrop saved successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error saving outcrop:', error);
+                updateSyncStatus('offline', 'Save failed');
+                showNotification('Error saving outcrop: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Save trail to Firebase
+        async function saveTrailToFirebase(trailId, trailData) {
+            if (!isAdmin) {
+                showNotification('Please log in first', 'error');
+                return;
+            }
+
+            updateSyncStatus('syncing', 'Saving trail...');
+            
+            try {
+                trailData.updated = Date.now();
+                if (!trailData.created) {
+                    trailData.created = Date.now();
+                }
+                
+                await db.collection('trails').doc(trailId).set(trailData);
+                updateSyncStatus('online', 'Trail saved successfully');
+                showNotification('Trail saved successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error saving trail:', error);
+                updateSyncStatus('offline', 'Save failed');
+                showNotification('Error saving trail: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
         // Delete quarry from Firebase
         async function deleteQuarryFromFirebase(quarryId) {
             if (!isAdmin) {
@@ -1513,36 +1922,102 @@
             }
         }
 
-        // Update legend dynamically based on quarries
+        // Delete outcrop from Firebase
+        async function deleteOutcropFromFirebase(outcropId) {
+            if (!isAdmin) {
+                showNotification('Please log in first', 'error');
+                return;
+            }
+
+            updateSyncStatus('syncing', 'Deleting outcrop...');
+            
+            try {
+                await db.collection('outcrops').doc(outcropId).delete();
+                updateSyncStatus('online', 'Outcrop deleted');
+                showNotification('Outcrop deleted successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting outcrop:', error);
+                updateSyncStatus('offline', 'Delete failed');
+                showNotification('Error deleting outcrop: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Delete trail from Firebase
+        async function deleteTrailFromFirebase(trailId) {
+            if (!isAdmin) {
+                showNotification('Please log in first', 'error');
+                return;
+            }
+
+            updateSyncStatus('syncing', 'Deleting trail...');
+            
+            try {
+                await db.collection('trails').doc(trailId).delete();
+                updateSyncStatus('online', 'Trail deleted');
+                showNotification('Trail deleted successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting trail:', error);
+                updateSyncStatus('offline', 'Delete failed');
+                showNotification('Error deleting trail: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Update legend dynamically based on data
         function updateLegend() {
             const legendItems = document.getElementById('legend-items');
             legendItems.innerHTML = '';
             
-            const colorGroups = {};
-            
+            // Add quarries to legend
+            const quarryColorGroups = {};
             Object.values(quarries).forEach(quarry => {
-                if (!colorGroups[quarry.color]) {
-                    colorGroups[quarry.color] = new Set();
+                if (!quarryColorGroups[quarry.color]) {
+                    quarryColorGroups[quarry.color] = new Set();
                 }
                 const baseName = quarry.name.replace(/\s*\d+$/, '');
-                colorGroups[quarry.color].add(baseName);
+                quarryColorGroups[quarry.color].add(baseName);
             });
             
-            Object.entries(colorGroups).forEach(([color, names]) => {
+            Object.entries(quarryColorGroups).forEach(([color, names]) => {
                 const legendItem = document.createElement('div');
                 legendItem.className = 'legend-item';
                 
                 const nameList = Array.from(names).join(', ');
                 legendItem.innerHTML = `
                     <div class="legend-color" style="background-color:${color};"></div>
-                    <span>${nameList}</span>
+                    <span>${nameList} (Quarries)</span>
                 `;
                 
                 legendItems.appendChild(legendItem);
             });
+            
+            // Add outcrops to legend
+            if (Object.keys(outcrops).length > 0) {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <div class="legend-color" style="background-color:#9b59b6;"></div>
+                    <span>Outcrops</span>
+                `;
+                legendItems.appendChild(legendItem);
+            }
+            
+            // Add trails to legend
+            if (Object.keys(trails).length > 0) {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <div class="legend-color" style="background-color:#e67e22; border-radius:0;"></div>
+                    <span>Trails</span>
+                `;
+                legendItems.appendChild(legendItem);
+            }
         }
 
-        // Refresh map and list
+        // Refresh map and list for quarries
         function refreshMapAndList() {
             Object.keys(markers).forEach(id => {
                 if (markers[id]) {
@@ -1554,6 +2029,34 @@
             
             Object.keys(quarries).forEach(id => updateMarker(id));
             renderQuarryList();
+        }
+
+        // Refresh outcrop map and list
+        function refreshOutcropMapAndList() {
+            Object.keys(outcropMarkers).forEach(id => {
+                if (outcropMarkers[id]) {
+                    map.removeLayer(outcropMarkers[id]);
+                }
+            });
+            
+            Object.keys(outcropMarkers).forEach(key => delete outcropMarkers[key]);
+            
+            Object.keys(outcrops).forEach(id => updateOutcropMarker(id));
+            renderOutcropList();
+        }
+
+        // Refresh trail map and list
+        function refreshTrailMapAndList() {
+            Object.keys(trailLayers).forEach(id => {
+                if (trailLayers[id]) {
+                    map.removeLayer(trailLayers[id]);
+                }
+            });
+            
+            Object.keys(trailLayers).forEach(key => delete trailLayers[key]);
+            
+            Object.keys(trails).forEach(id => updateTrailLayer(id));
+            renderTrailList();
         }
 
         // Function to render quarry list
@@ -1585,7 +2088,66 @@
             });
         }
 
-        // Function to create or update a marker
+        // Function to render outcrop list
+        function renderOutcropList() {
+            outcropList.innerHTML = '';
+            Object.keys(outcrops).forEach(id => {
+                const outcrop = outcrops[id];
+                const outcropItem = document.createElement('div');
+                outcropItem.className = 'outcrop-item';
+                outcropItem.setAttribute('data-id', outcrop.id);
+                
+                outcropItem.innerHTML = `
+                    <div class="outcrop-name">
+                        <span class="legend-color" style="display:inline-block; margin-right:8px; background-color:${outcrop.color};"></span>
+                        ${outcrop.name}
+                    </div>
+                    <div class="outcrop-coords">${outcrop.coords[1].toFixed(5)}°, ${outcrop.coords[0].toFixed(5)}°</div>
+                    <div class="outcrop-description">${outcrop.description.substring(0, 100)}${outcrop.description.length > 100 ? '...' : ''}</div>
+                    <div class="outcrop-coords">Rock Type: ${outcrop.rockType}</div>
+                `;
+                
+                outcropItem.addEventListener('click', function() {
+                    highlightOutcrop(outcrop.id);
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
+                });
+                
+                outcropList.appendChild(outcropItem);
+            });
+        }
+
+        // Function to render trail list
+        function renderTrailList() {
+            trailList.innerHTML = '';
+            Object.keys(trails).forEach(id => {
+                const trail = trails[id];
+                const trailItem = document.createElement('div');
+                trailItem.className = 'trail-item';
+                trailItem.setAttribute('data-id', trail.id);
+                
+                trailItem.innerHTML = `
+                    <div class="trail-name">
+                        <span class="legend-color" style="display:inline-block; margin-right:8px; background-color:${trail.color}; border-radius:0;"></span>
+                        ${trail.name}
+                    </div>
+                    <div class="trail-description">${trail.description.substring(0, 100)}${trail.description.length > 100 ? '...' : ''}</div>
+                    <div class="trail-coords">Points: ${trail.points ? trail.points.length : 0}</div>
+                `;
+                
+                trailItem.addEventListener('click', function() {
+                    highlightTrail(trail.id);
+                    if (window.innerWidth <= 768) {
+                        closeSidebar();
+                    }
+                });
+                
+                trailList.appendChild(trailItem);
+            });
+        }
+
+        // Function to create or update a quarry marker
         function updateMarker(quarryId) {
             const quarry = quarries[quarryId];
             if (!quarry) return;
@@ -1623,6 +2185,102 @@
             });
         }
 
+        // Function to create or update an outcrop marker
+        function updateOutcropMarker(outcropId) {
+            const outcrop = outcrops[outcropId];
+            if (!outcrop) return;
+            
+            if (outcropMarkers[outcropId]) {
+                map.removeLayer(outcropMarkers[outcropId]);
+            }
+            
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color:${outcrop.color}; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            
+            const marker = L.marker(outcrop.coords, { icon: customIcon }).addTo(map);
+            
+            let popupContent = `<h3>${outcrop.name}</h3>`;
+            popupContent += `<p><strong>Coordinates:</strong> ${outcrop.coords[1].toFixed(5)}°, ${outcrop.coords[0].toFixed(5)}°</p>`;
+            popupContent += `<p><strong>Rock Type:</strong> ${outcrop.rockType}</p>`;
+            popupContent += `<p>${outcrop.description}</p>`;
+            
+            marker.bindPopup(popupContent);
+            outcropMarkers[outcropId] = marker;
+            
+            marker.on('click', function() {
+                highlightOutcrop(outcropId);
+            });
+        }
+
+        // Function to create or update a trail layer
+        function updateTrailLayer(trailId) {
+            const trail = trails[trailId];
+            if (!trail || !trail.points || trail.points.length < 2) return;
+            
+            if (trailLayers[trailId]) {
+                map.removeLayer(trailLayers[trailId]);
+            }
+            
+            // Create polyline for the trail
+            const polyline = L.polyline(trail.points, {
+                color: trail.color,
+                weight: 4,
+                opacity: 0.7,
+                smoothFactor: 1
+            }).addTo(map);
+            
+            // Add markers for start and end points
+            const startMarker = L.marker(trail.points[0]).addTo(map);
+            const endMarker = L.marker(trail.points[trail.points.length - 1]).addTo(map);
+            
+            startMarker.bindPopup(`<strong>Start:</strong> ${trail.name}`);
+            endMarker.bindPopup(`<strong>End:</strong> ${trail.name}`);
+            
+            // Combine all layers for this trail
+            const trailGroup = L.layerGroup([polyline, startMarker, endMarker]);
+            trailLayers[trailId] = trailGroup;
+            
+            let popupContent = `<h3>${trail.name}</h3>`;
+            popupContent += `<p>${trail.description}</p>`;
+            popupContent += `<p><strong>Points:</strong> ${trail.points.length}</p>`;
+            popupContent += `<p><strong>Length:</strong> ${calculateTrailLength(trail.points).toFixed(2)} km</p>`;
+            
+            polyline.bindPopup(popupContent);
+            
+            polyline.on('click', function() {
+                highlightTrail(trailId);
+            });
+        }
+
+        // Calculate approximate trail length in kilometers
+        function calculateTrailLength(points) {
+            let totalDistance = 0;
+            for (let i = 1; i < points.length; i++) {
+                const lat1 = points[i-1][0];
+                const lon1 = points[i-1][1];
+                const lat2 = points[i][0];
+                const lon2 = points[i][1];
+                
+                // Haversine formula for distance between two points
+                const R = 6371; // Earth's radius in km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const distance = R * c;
+                
+                totalDistance += distance;
+            }
+            return totalDistance;
+        }
+
         // Mobile sidebar functions
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1632,6 +2290,8 @@
             
             if (!dataLoaded && sidebar.classList.contains('active')) {
                 loadQuarriesFromFirebase();
+                loadOutcropsFromFirebase();
+                loadTrailsFromFirebase();
             }
         }
 
@@ -1745,6 +2405,72 @@
             }
         }
 
+        // Helper function to highlight outcrop
+        function highlightOutcrop(outcropId) {
+            document.querySelectorAll('.outcrop-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const outcropItem = document.querySelector(`.outcrop-item[data-id="${outcropId}"]`);
+            if (outcropItem) {
+                outcropItem.classList.add('active');
+            }
+            
+            if (outcropMarkers[outcropId]) {
+                outcropMarkers[outcropId].openPopup();
+            }
+            
+            if (isAdmin) {
+                const outcrop = outcrops[outcropId];
+                if (outcrop) {
+                    document.getElementById('outcrop-name').value = outcrop.name;
+                    document.getElementById('outcrop-lat').value = outcrop.coords[0];
+                    document.getElementById('outcrop-lng').value = outcrop.coords[1];
+                    document.getElementById('outcrop-description').value = outcrop.description;
+                    document.getElementById('outcrop-rock-type').value = outcrop.rockType;
+                    document.getElementById('outcrop-color').value = outcrop.color;
+                    document.getElementById('outcrop-color-preview').style.backgroundColor = outcrop.color;
+                    currentOutcrop = outcropId;
+                }
+            }
+        }
+
+        // Helper function to highlight trail
+        function highlightTrail(trailId) {
+            document.querySelectorAll('.trail-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const trailItem = document.querySelector(`.trail-item[data-id="${trailId}"]`);
+            if (trailItem) {
+                trailItem.classList.add('active');
+            }
+            
+            if (trailLayers[trailId]) {
+                // Focus map on the trail
+                const trail = trails[trailId];
+                if (trail.points && trail.points.length > 0) {
+                    const group = new L.featureGroup(trailLayers[trailId].getLayers());
+                    map.fitBounds(group.getBounds());
+                }
+            }
+            
+            if (isAdmin) {
+                const trail = trails[trailId];
+                if (trail) {
+                    document.getElementById('trail-name').value = trail.name;
+                    document.getElementById('trail-description').value = trail.description;
+                    document.getElementById('trail-color').value = trail.color;
+                    document.getElementById('trail-color-preview').style.backgroundColor = trail.color;
+                    currentTrail = trailId;
+                    
+                    // Load trail points for editing
+                    currentTrailPoints = trail.points || [];
+                    updateTrailPointsList();
+                }
+            }
+        }
+
         // Helper function to reset form
         function resetForm() {
             document.getElementById('quarry-name').value = '';
@@ -1753,6 +2479,22 @@
             document.getElementById('quarry-description').value = '';
             document.getElementById('quarry-color').value = '#3498db';
             document.getElementById('color-preview').style.backgroundColor = '#3498db';
+            
+            document.getElementById('outcrop-name').value = '';
+            document.getElementById('outcrop-lat').value = '32.26';
+            document.getElementById('outcrop-lng').value = '36.15';
+            document.getElementById('outcrop-description').value = '';
+            document.getElementById('outcrop-rock-type').value = 'limestone';
+            document.getElementById('outcrop-color').value = '#9b59b6';
+            document.getElementById('outcrop-color-preview').style.backgroundColor = '#9b59b6';
+            
+            document.getElementById('trail-name').value = '';
+            document.getElementById('trail-description').value = '';
+            document.getElementById('trail-color').value = '#e67e22';
+            document.getElementById('trail-color-preview').style.backgroundColor = '#e67e22';
+            
+            currentTrailPoints = [];
+            updateTrailPointsList();
             
             uploadedImages = [];
             updateUploadedImagesList();
@@ -1791,6 +2533,116 @@
             `);
         };
 
+        // Trail drawing functions
+        function startDrawingTrail() {
+            if (isDrawingTrail) return;
+            
+            isDrawingTrail = true;
+            currentTrailPoints = [];
+            updateTrailPointsList();
+            
+            // Remove any existing temporary trail
+            if (tempTrailLayer) {
+                map.removeLayer(tempTrailLayer);
+            }
+            
+            // Add click event to map for adding points
+            map.on('click', addTrailPoint);
+            
+            showNotification('Click on the map to add trail points. Click "Stop Drawing" when finished.', 'success');
+        }
+
+        function stopDrawingTrail() {
+            if (!isDrawingTrail) return;
+            
+            isDrawingTrail = false;
+            map.off('click', addTrailPoint);
+            
+            // Remove temporary trail
+            if (tempTrailLayer) {
+                map.removeLayer(tempTrailLayer);
+                tempTrailLayer = null;
+            }
+            
+            showNotification('Trail drawing stopped. You can now save the trail.', 'success');
+        }
+
+        function addTrailPoint(e) {
+            if (!isDrawingTrail) return;
+            
+            const point = [e.latlng.lat, e.latlng.lng];
+            currentTrailPoints.push(point);
+            updateTrailPointsList();
+            
+            // Update temporary trail visualization
+            if (tempTrailLayer) {
+                map.removeLayer(tempTrailLayer);
+            }
+            
+            if (currentTrailPoints.length > 1) {
+                tempTrailLayer = L.polyline(currentTrailPoints, {
+                    color: document.getElementById('trail-color').value,
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '5, 10'
+                }).addTo(map);
+            }
+        }
+
+        function clearTrailPoints() {
+            currentTrailPoints = [];
+            updateTrailPointsList();
+            
+            if (tempTrailLayer) {
+                map.removeLayer(tempTrailLayer);
+                tempTrailLayer = null;
+            }
+        }
+
+        function updateTrailPointsList() {
+            const container = document.getElementById('trail-points-list');
+            container.innerHTML = '';
+            
+            if (currentTrailPoints.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#6c757d; padding:1rem;">No points added yet</div>';
+                return;
+            }
+            
+            currentTrailPoints.forEach((point, index) => {
+                const item = document.createElement('div');
+                item.className = 'trail-point-item';
+                item.innerHTML = `
+                    <span>Point ${index + 1}: ${point[1].toFixed(5)}°, ${point[0].toFixed(5)}°</span>
+                    <button class="remove-point-btn" data-index="${index}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+            
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-point-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.closest('.remove-point-btn').dataset.index);
+                    currentTrailPoints.splice(index, 1);
+                    updateTrailPointsList();
+                    
+                    // Update temporary trail
+                    if (tempTrailLayer) {
+                        map.removeLayer(tempTrailLayer);
+                        if (currentTrailPoints.length > 1) {
+                            tempTrailLayer = L.polyline(currentTrailPoints, {
+                                color: document.getElementById('trail-color').value,
+                                weight: 3,
+                                opacity: 0.7,
+                                dashArray: '5, 10'
+                            }).addTo(map);
+                        }
+                    }
+                });
+            });
+        }
+
         // Initialize the application
         function initApp() {
             updateMapInfo();
@@ -1800,6 +2652,8 @@
             if (db) {
                 initializeDefaultData().then(() => {
                     loadQuarriesFromFirebase();
+                    loadOutcropsFromFirebase();
+                    loadTrailsFromFirebase();
                 });
             }
         }
@@ -1809,16 +2663,31 @@
             map.on('moveend', updateMapInfo);
             map.on('zoomend', updateMapInfo);
             
+            // Quarry color picker
             document.getElementById('quarry-color').addEventListener('input', function() {
                 document.getElementById('color-preview').style.backgroundColor = this.value;
             });
             
+            // Outcrop color picker
+            document.getElementById('outcrop-color').addEventListener('input', function() {
+                document.getElementById('outcrop-color-preview').style.backgroundColor = this.value;
+            });
+            
+            // Trail color picker
+            document.getElementById('trail-color').addEventListener('input', function() {
+                document.getElementById('trail-color-preview').style.backgroundColor = this.value;
+            });
+            
             document.getElementById('refresh-data').addEventListener('click', function() {
                 loadQuarriesFromFirebase();
+                loadOutcropsFromFirebase();
+                loadTrailsFromFirebase();
             });
             
             document.getElementById('retry-connection').addEventListener('click', function() {
                 loadQuarriesFromFirebase();
+                loadOutcropsFromFirebase();
+                loadTrailsFromFirebase();
             });
             
             document.getElementById('reset-view').addEventListener('click', function() {
@@ -1852,6 +2721,7 @@
             
             document.getElementById('logout-btn').addEventListener('click', logoutUser);
             
+            // Quarry management
             document.getElementById('add-quarry-btn').addEventListener('click', async function() {
                 if (!isAdmin) {
                     showNotification('Please log in first', 'error');
@@ -1941,6 +2811,205 @@
                 }
             });
             
+            // Outcrop management
+            document.getElementById('add-outcrop-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('outcrop-name').value;
+                const lat = parseFloat(document.getElementById('outcrop-lat').value);
+                const lng = parseFloat(document.getElementById('outcrop-lng').value);
+                const description = document.getElementById('outcrop-description').value;
+                const rockType = document.getElementById('outcrop-rock-type').value;
+                const color = document.getElementById('outcrop-color').value;
+                
+                if (!name || !lat || !lng) {
+                    showNotification('Please fill in at least name and coordinates', 'error');
+                    return;
+                }
+                
+                const id = 'outcrop-' + Date.now();
+                
+                const outcropData = {
+                    id: id,
+                    coords: [lat, lng],
+                    name: name,
+                    description: description,
+                    rockType: rockType,
+                    color: color,
+                    created: Date.now(),
+                    updated: Date.now()
+                };
+                
+                await saveOutcropToFirebase(id, outcropData);
+                updateLegend();
+                resetForm();
+            });
+            
+            document.getElementById('update-outcrop-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                if (!currentOutcrop) {
+                    showNotification('Please select an outcrop to update', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('outcrop-name').value;
+                const lat = parseFloat(document.getElementById('outcrop-lat').value);
+                const lng = parseFloat(document.getElementById('outcrop-lng').value);
+                const description = document.getElementById('outcrop-description').value;
+                const rockType = document.getElementById('outcrop-rock-type').value;
+                const color = document.getElementById('outcrop-color').value;
+                
+                if (!name || !lat || !lng) {
+                    showNotification('Please fill in at least name and coordinates', 'error');
+                    return;
+                }
+                
+                const outcropData = {
+                    ...outcrops[currentOutcrop],
+                    name: name,
+                    coords: [lat, lng],
+                    description: description,
+                    rockType: rockType,
+                    color: color,
+                    updated: Date.now()
+                };
+                
+                await saveOutcropToFirebase(currentOutcrop, outcropData);
+                updateLegend();
+            });
+            
+            document.getElementById('delete-outcrop-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                if (!currentOutcrop) {
+                    showNotification('Please select an outcrop to delete', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to delete this outcrop?')) {
+                    await deleteOutcropFromFirebase(currentOutcrop);
+                    updateLegend();
+                    resetForm();
+                    currentOutcrop = null;
+                }
+            });
+            
+            // Trail management
+            document.getElementById('add-trail-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('trail-name').value;
+                const description = document.getElementById('trail-description').value;
+                const color = document.getElementById('trail-color').value;
+                
+                if (!name) {
+                    showNotification('Please fill in at least trail name', 'error');
+                    return;
+                }
+                
+                if (currentTrailPoints.length < 2) {
+                    showNotification('Please add at least 2 points to create a trail', 'error');
+                    return;
+                }
+                
+                const id = 'trail-' + Date.now();
+                
+                const trailData = {
+                    id: id,
+                    name: name,
+                    description: description,
+                    color: color,
+                    points: currentTrailPoints,
+                    created: Date.now(),
+                    updated: Date.now()
+                };
+                
+                await saveTrailToFirebase(id, trailData);
+                updateLegend();
+                resetForm();
+                stopDrawingTrail();
+            });
+            
+            document.getElementById('update-trail-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                if (!currentTrail) {
+                    showNotification('Please select a trail to update', 'error');
+                    return;
+                }
+                
+                const name = document.getElementById('trail-name').value;
+                const description = document.getElementById('trail-description').value;
+                const color = document.getElementById('trail-color').value;
+                
+                if (!name) {
+                    showNotification('Please fill in at least trail name', 'error');
+                    return;
+                }
+                
+                // Use existing points if no new points were added
+                const points = currentTrailPoints.length > 0 ? currentTrailPoints : trails[currentTrail].points;
+                
+                if (points.length < 2) {
+                    showNotification('A trail must have at least 2 points', 'error');
+                    return;
+                }
+                
+                const trailData = {
+                    ...trails[currentTrail],
+                    name: name,
+                    description: description,
+                    color: color,
+                    points: points,
+                    updated: Date.now()
+                };
+                
+                await saveTrailToFirebase(currentTrail, trailData);
+                updateLegend();
+                stopDrawingTrail();
+            });
+            
+            document.getElementById('delete-trail-btn').addEventListener('click', async function() {
+                if (!isAdmin) {
+                    showNotification('Please log in first', 'error');
+                    return;
+                }
+                
+                if (!currentTrail) {
+                    showNotification('Please select a trail to delete', 'error');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to delete this trail?')) {
+                    await deleteTrailFromFirebase(currentTrail);
+                    updateLegend();
+                    resetForm();
+                    currentTrail = null;
+                    stopDrawingTrail();
+                }
+            });
+            
+            // Trail drawing controls
+            document.getElementById('start-drawing-trail').addEventListener('click', startDrawingTrail);
+            document.getElementById('stop-drawing-trail').addEventListener('click', stopDrawingTrail);
+            document.getElementById('clear-trail-points').addEventListener('click', clearTrailPoints);
+            
             document.getElementById('zoom-in').addEventListener('click', function() {
                 map.zoomIn();
             });
@@ -1955,8 +3024,11 @@
             
             map.on('click', function(e) {
                 if (isAdmin) {
+                    // Update coordinates in all forms
                     document.getElementById('lat').value = e.latlng.lat.toFixed(5);
                     document.getElementById('lng').value = e.latlng.lng.toFixed(5);
+                    document.getElementById('outcrop-lat').value = e.latlng.lat.toFixed(5);
+                    document.getElementById('outcrop-lng').value = e.latlng.lng.toFixed(5);
                 }
             });
         }
@@ -1965,4 +3037,4 @@
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
-</html>
+    </html>
