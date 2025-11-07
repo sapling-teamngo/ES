@@ -368,11 +368,11 @@
             background-color: #219653;
         }
         
-        .quarry-list {
+        .point-list {
             flex: 1;
         }
         
-        .quarry-item {
+        .point-item {
             background-color: white;
             border: 1px solid #e1e8ed;
             border-radius: 8px;
@@ -383,25 +383,25 @@
         }
         
         @media (max-width: 768px) {
-            .quarry-item {
+            .point-item {
                 padding: 0.8rem;
                 margin-bottom: 0.5rem;
             }
         }
         
-        .quarry-item:hover {
+        .point-item:hover {
             background-color: #f8f9fa;
             border-color: #3498db;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         
-        .quarry-item.active {
+        .point-item.active {
             background-color: #e1f0fa;
             border-color: #3498db;
         }
         
-        .quarry-name {
+        .point-name {
             font-weight: 700;
             margin-bottom: 0.5rem;
             color: #2c3e50;
@@ -409,31 +409,31 @@
         }
         
         @media (max-width: 768px) {
-            .quarry-name {
+            .point-name {
                 font-size: 0.9rem;
                 margin-bottom: 0.3rem;
             }
         }
         
-        .quarry-coords {
+        .point-coords {
             font-size: 0.85rem;
             color: #7f8c8d;
         }
         
         @media (max-width: 768px) {
-            .quarry-coords {
+            .point-coords {
                 font-size: 0.8rem;
                 }
         }
         
-        .quarry-description {
+        .point-description {
             font-size: 0.9rem;
             margin-top: 0.5rem;
             color: #5d6d7e;
         }
         
         @media (max-width: 768px) {
-            .quarry-description {
+            .point-description {
                 font-size: 0.85rem;
                 margin-top: 0.3rem;
             }
@@ -511,21 +511,22 @@
         
         .map-controls {
             position: absolute;
-            top: 80px;
-            right: 30px;
+            bottom: 100px;
+            left: 10px;
             background: white;
             border-radius: 4px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             padding: 0.5rem;
             z-index: 1000;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            gap: 5px;
         }
         
         @media (max-width: 768px) {
             .map-controls {
-                top: 140px;
-                right: 70px;
+                bottom: 120px;
+                left: 10px;
                 padding: 0.4rem;
             }
         }
@@ -562,6 +563,8 @@
             padding: 0.75rem;
             z-index: 1000;
             max-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
         }
         
         @media (max-width: 768px) {
@@ -569,6 +572,7 @@
                 bottom: 80px;
                 right: 10px;
                 max-width: 180px;
+                max-height: 250px;
                 padding: 0.6rem;
             }
         }
@@ -584,6 +588,12 @@
             height: 20px;
             margin-right: 0.5rem;
             border-radius: 50%;
+        }
+        
+        .legend-line {
+            width: 20px;
+            height: 4px;
+            margin-right: 0.5rem;
         }
         
         .color-picker {
@@ -947,6 +957,23 @@
             margin: 1rem 0;
             font-size: 0.9rem;
         }
+        
+        /* Drawing mode styles */
+        .drawing-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .drawing-btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .drawing-active {
+            background-color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -1011,8 +1038,8 @@
                 
                 <div class="tab-content">
                     <div class="tab-panel active" id="info-tab">
-                        <h3><i class="fas fa-mountain"></i> Quarries Overview</h3>
-                        <p>This map displays quarries in real-time. Changes made by admins are instantly visible to all users.</p>
+                        <h3><i class="fas fa-map-marker-alt"></i> Points Overview</h3>
+                        <p>This map displays geological points and lines in real-time. Changes made by admins are instantly visible to all users.</p>
                         
                         <div class="sync-status">
                             <div class="sync-indicator" id="sync-indicator"></div>
@@ -1030,8 +1057,8 @@
                             </button>
                         </div>
                         
-                        <div class="quarry-list" id="quarry-list">
-                            <!-- Quarry items will be populated by JavaScript -->
+                        <div class="point-list" id="point-list">
+                            <!-- Point items will be populated by JavaScript -->
                         </div>
                     </div>
                     
@@ -1065,14 +1092,24 @@
                                     <strong>Note:</strong> Image storage is currently using base64 encoding. For better performance, enable Firebase Storage later.
                                 </div>
                                 
-                                <h3><i class="fas fa-edit"></i> Manage Quarries</h3>
-                                <div class="form-group">
-                                    <label for="quarry-name">Quarry Name</label>
-                                    <input type="text" id="quarry-name" placeholder="Enter quarry name">
+                                <h3><i class="fas fa-edit"></i> Manage Points & Lines</h3>
+                                
+                                <div class="drawing-controls">
+                                    <button class="drawing-btn" id="point-mode-btn">
+                                        <i class="fas fa-map-marker-alt"></i> Point Mode
+                                    </button>
+                                    <button class="drawing-btn" id="line-mode-btn">
+                                        <i class="fas fa-draw-polygon"></i> Line Mode
+                                    </button>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="quarry-coordinates">Coordinates</label>
+                                    <label for="point-name">Name</label>
+                                    <input type="text" id="point-name" placeholder="Enter point/line name">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="point-coordinates">Coordinates</label>
                                     <div class="coordinates-input">
                                         <input type="number" id="lat" step="0.00001" placeholder="Latitude" value="32.26">
                                         <input type="number" id="lng" step="0.00001" placeholder="Longitude" value="36.15">
@@ -1080,15 +1117,15 @@
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="quarry-description">Description</label>
-                                    <textarea id="quarry-description" rows="4" placeholder="Enter quarry description"></textarea>
+                                    <label for="point-description">Description</label>
+                                    <textarea id="point-description" rows="4" placeholder="Enter description"></textarea>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="quarry-color">Marker Color</label>
+                                    <label for="point-color">Color</label>
                                     <div class="color-picker">
                                         <div class="color-preview" id="color-preview" style="background-color: #3498db;"></div>
-                                        <input type="color" id="quarry-color" class="color-wheel" value="#3498db">
+                                        <input type="color" id="point-color" class="color-wheel" value="#3498db">
                                     </div>
                                 </div>
                                 
@@ -1108,13 +1145,13 @@
                                 </div>
                                 
                                 <div class="admin-controls">
-                                    <button id="add-quarry-btn">
-                                        <i class="fas fa-plus"></i> Add Quarry
+                                    <button id="add-point-btn">
+                                        <i class="fas fa-plus"></i> Add Point/Line
                                     </button>
-                                    <button id="update-quarry-btn" class="btn-secondary">
+                                    <button id="update-point-btn" class="btn-secondary">
                                         <i class="fas fa-sync"></i> Update
                                     </button>
-                                    <button id="delete-quarry-btn" class="btn-danger">
+                                    <button id="delete-point-btn" class="btn-danger">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                     <button id="logout-btn" class="btn-secondary">
@@ -1211,14 +1248,18 @@
         }).addTo(map);
         
         // Global variables
-        let quarries = {};
+        let points = {};
         const markers = {};
-        const quarryList = document.getElementById('quarry-list');
+        const lines = {};
+        const pointList = document.getElementById('point-list');
         let isAdmin = false;
-        let currentQuarry = null;
+        let currentPoint = null;
         let dataLoaded = false;
-        let unsubscribeQuarries = null;
+        let unsubscribePoints = null;
         let uploadedImages = [];
+        let drawingMode = 'point'; // 'point' or 'line'
+        let tempLine = null;
+        let linePoints = [];
 
         // Function to update corner coordinates and scale
         function updateMapInfo() {
@@ -1325,7 +1366,7 @@
             try {
                 await auth.signOut();
                 isAdmin = false;
-                currentQuarry = null;
+                currentPoint = null;
                 hideAdminUI();
                 showNotification('Logged out successfully', 'success');
             } catch (error) {
@@ -1344,8 +1385,8 @@
             }
         });
 
-        // Load quarries from Firebase
-        async function loadQuarriesFromFirebase() {
+        // Load points from Firebase
+        async function loadPointsFromFirebase() {
             if (!db) {
                 showConnectionError('Firebase not initialized. Please refresh the page.');
                 return;
@@ -1355,14 +1396,14 @@
             hideConnectionError();
             
             try {
-                if (unsubscribeQuarries) {
-                    unsubscribeQuarries();
+                if (unsubscribePoints) {
+                    unsubscribePoints();
                 }
                 
-                unsubscribeQuarries = db.collection('quarries').onSnapshot(snapshot => {
-                    quarries = {};
+                unsubscribePoints = db.collection('points').onSnapshot(snapshot => {
+                    points = {};
                     snapshot.forEach(doc => {
-                        quarries[doc.id] = doc.data();
+                        points[doc.id] = doc.data();
                     });
                     
                     refreshMapAndList();
@@ -1392,30 +1433,32 @@
             }
         }
 
-        // Initialize with default quarries if collection is empty
+        // Initialize with default points if collection is empty
         async function initializeDefaultData() {
             if (!db) return;
             
             try {
-                const snapshot = await db.collection('quarries').get();
+                const snapshot = await db.collection('points').get();
                 if (snapshot.empty) {
-                    const defaultQuarries = {
-                        'day1-quarry1': {
-                            id: 'day1-quarry1',
+                    const defaultPoints = {
+                        'day1-point1': {
+                            id: 'day1-point1',
                             coords: [32.26054, 36.15565],
-                            name: 'Day 1: Quarry 1',
-                            description: 'First quarry surveyed on day 1. Notable for its extensive excavation and visible stratification.',
+                            name: 'Day 1: Point 1',
+                            description: 'First point surveyed on day 1. Notable for its geological features.',
                             color: '#e74c3c',
+                            type: 'point',
                             images: [],
                             created: Date.now(),
                             updated: Date.now()
                         },
-                        'day1-quarry2': {
-                            id: 'day1-quarry2',
+                        'day1-point2': {
+                            id: 'day1-point2',
                             coords: [32.25714, 36.15712],
-                            name: 'Day 1: Quarry 2',
-                            description: 'Second quarry from day 1. Contains unique mineral deposits in the northern section.',
+                            name: 'Day 1: Point 2',
+                            description: 'Second point from day 1. Contains unique mineral deposits.',
                             color: '#e74c3c',
+                            type: 'point',
                             images: [],
                             created: Date.now(),
                             updated: Date.now()
@@ -1423,13 +1466,13 @@
                     };
                     
                     const batch = db.batch();
-                    Object.entries(defaultQuarries).forEach(([id, quarry]) => {
-                        const quarryRef = db.collection('quarries').doc(id);
-                        batch.set(quarryRef, quarry);
+                    Object.entries(defaultPoints).forEach(([id, point]) => {
+                        const pointRef = db.collection('points').doc(id);
+                        batch.set(pointRef, point);
                     });
                     
                     await batch.commit();
-                    console.log('Default quarries initialized');
+                    console.log('Default points initialized');
                 }
             } catch (error) {
                 console.error('Error initializing default data:', error);
@@ -1446,8 +1489,8 @@
             });
         }
 
-        // Save quarry to Firebase (WITH BASE64 IMAGES)
-        async function saveQuarryToFirebase(quarryId, quarryData) {
+        // Save point to Firebase (WITH BASE64 IMAGES)
+        async function savePointToFirebase(pointId, pointData) {
             if (!isAdmin) {
                 showNotification('Please log in first', 'error');
                 return;
@@ -1456,9 +1499,9 @@
             updateSyncStatus('syncing', 'Saving data...');
             
             try {
-                quarryData.updated = Date.now();
-                if (!quarryData.created) {
-                    quarryData.created = Date.now();
+                pointData.updated = Date.now();
+                if (!pointData.created) {
+                    pointData.created = Date.now();
                 }
                 
                 // Handle image uploads as base64
@@ -1468,7 +1511,7 @@
                         try {
                             // Convert image to base64
                             const base64Image = await imageToBase64(file);
-                            quarryData.images = [...(quarryData.images || []), base64Image];
+                            pointData.images = [...(pointData.images || []), base64Image];
                         } catch (error) {
                             console.error('Error converting image:', error);
                             showNotification(`Error processing: ${file.name}`, 'error');
@@ -1479,20 +1522,20 @@
                     updateUploadedImagesList();
                 }
                 
-                await db.collection('quarries').doc(quarryId).set(quarryData);
+                await db.collection('points').doc(pointId).set(pointData);
                 updateSyncStatus('online', 'Data saved successfully');
-                showNotification('Quarry saved successfully', 'success');
+                showNotification('Point saved successfully', 'success');
                 
             } catch (error) {
-                console.error('Error saving quarry:', error);
+                console.error('Error saving point:', error);
                 updateSyncStatus('offline', 'Save failed');
-                showNotification('Error saving quarry: ' + error.message, 'error');
+                showNotification('Error saving point: ' + error.message, 'error');
                 throw error;
             }
         }
 
-        // Delete quarry from Firebase
-        async function deleteQuarryFromFirebase(quarryId) {
+        // Delete point from Firebase
+        async function deletePointFromFirebase(pointId) {
             if (!isAdmin) {
                 showNotification('Please log in first', 'error');
                 return;
@@ -1501,31 +1544,31 @@
             updateSyncStatus('syncing', 'Deleting...');
             
             try {
-                await db.collection('quarries').doc(quarryId).delete();
-                updateSyncStatus('online', 'Quarry deleted');
-                showNotification('Quarry deleted successfully', 'success');
+                await db.collection('points').doc(pointId).delete();
+                updateSyncStatus('online', 'Point deleted');
+                showNotification('Point deleted successfully', 'success');
                 
             } catch (error) {
-                console.error('Error deleting quarry:', error);
+                console.error('Error deleting point:', error);
                 updateSyncStatus('offline', 'Delete failed');
-                showNotification('Error deleting quarry: ' + error.message, 'error');
+                showNotification('Error deleting point: ' + error.message, 'error');
                 throw error;
             }
         }
 
-        // Update legend dynamically based on quarries
+        // Update legend dynamically based on points
         function updateLegend() {
             const legendItems = document.getElementById('legend-items');
             legendItems.innerHTML = '';
             
             const colorGroups = {};
             
-            Object.values(quarries).forEach(quarry => {
-                if (!colorGroups[quarry.color]) {
-                    colorGroups[quarry.color] = new Set();
+            Object.values(points).forEach(point => {
+                if (!colorGroups[point.color]) {
+                    colorGroups[point.color] = new Set();
                 }
-                const baseName = quarry.name.replace(/\s*\d+$/, '');
-                colorGroups[quarry.color].add(baseName);
+                const baseName = point.name.replace(/\s*\d+$/, '');
+                colorGroups[point.color].add(baseName);
             });
             
             Object.entries(colorGroups).forEach(([color, names]) => {
@@ -1533,8 +1576,23 @@
                 legendItem.className = 'legend-item';
                 
                 const nameList = Array.from(names).join(', ');
+                
+                // Check if this color is used for points or lines
+                const hasPoints = Object.values(points).some(p => p.color === color && p.type === 'point');
+                const hasLines = Object.values(points).some(p => p.color === color && p.type === 'line');
+                
+                let symbol = '';
+                if (hasPoints && hasLines) {
+                    symbol = `<div class="legend-color" style="background-color:${color};"></div>
+                              <div class="legend-line" style="background-color:${color};"></div>`;
+                } else if (hasPoints) {
+                    symbol = `<div class="legend-color" style="background-color:${color};"></div>`;
+                } else if (hasLines) {
+                    symbol = `<div class="legend-line" style="background-color:${color};"></div>`;
+                }
+                
                 legendItem.innerHTML = `
-                    <div class="legend-color" style="background-color:${color};"></div>
+                    ${symbol}
                     <span>${nameList}</span>
                 `;
                 
@@ -1550,77 +1608,115 @@
                 }
             });
             
-            Object.keys(markers).forEach(key => delete markers[key]);
+            Object.keys(lines).forEach(id => {
+                if (lines[id]) {
+                    map.removeLayer(lines[id]);
+                }
+            });
             
-            Object.keys(quarries).forEach(id => updateMarker(id));
-            renderQuarryList();
+            Object.keys(markers).forEach(key => delete markers[key]);
+            Object.keys(lines).forEach(key => delete lines[key]);
+            
+            Object.keys(points).forEach(id => updateMarker(id));
+            renderPointList();
         }
 
-        // Function to render quarry list
-        function renderQuarryList() {
-            quarryList.innerHTML = '';
-            Object.keys(quarries).forEach(id => {
-                const quarry = quarries[id];
-                const quarryItem = document.createElement('div');
-                quarryItem.className = 'quarry-item';
-                quarryItem.setAttribute('data-id', quarry.id);
+        // Function to render point list
+        function renderPointList() {
+            pointList.innerHTML = '';
+            Object.keys(points).forEach(id => {
+                const point = points[id];
+                const pointItem = document.createElement('div');
+                pointItem.className = 'point-item';
+                pointItem.setAttribute('data-id', point.id);
                 
-                quarryItem.innerHTML = `
-                    <div class="quarry-name">
-                        <span class="legend-color" style="display:inline-block; margin-right:8px; background-color:${quarry.color};"></span>
-                        ${quarry.name}
+                const icon = point.type === 'line' ? 
+                    '<i class="fas fa-draw-polygon" style="margin-right: 8px;"></i>' : 
+                    '<span class="legend-color" style="display:inline-block; margin-right:8px; background-color:' + point.color + ';"></span>';
+                
+                pointItem.innerHTML = `
+                    <div class="point-name">
+                        ${icon}
+                        ${point.name}
                     </div>
-                    <div class="quarry-coords">${quarry.coords[1].toFixed(5)}°, ${quarry.coords[0].toFixed(5)}°</div>
-                    <div class="quarry-description">${quarry.description.substring(0, 100)}${quarry.description.length > 100 ? '...' : ''}</div>
+                    <div class="point-coords">${point.coords[1].toFixed(5)}°, ${point.coords[0].toFixed(5)}°</div>
+                    <div class="point-description">${point.description.substring(0, 100)}${point.description.length > 100 ? '...' : ''}</div>
                 `;
                 
-                quarryItem.addEventListener('click', function() {
-                    highlightQuarry(quarry.id);
+                pointItem.addEventListener('click', function() {
+                    highlightPoint(point.id);
                     if (window.innerWidth <= 768) {
                         closeSidebar();
                     }
                 });
                 
-                quarryList.appendChild(quarryItem);
+                pointList.appendChild(pointItem);
             });
         }
 
-        // Function to create or update a marker
-        function updateMarker(quarryId) {
-            const quarry = quarries[quarryId];
-            if (!quarry) return;
+        // Function to create or update a marker or line
+        function updateMarker(pointId) {
+            const point = points[pointId];
+            if (!point) return;
             
-            if (markers[quarryId]) {
-                map.removeLayer(markers[quarryId]);
-            }
-            
-            const customIcon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div style="background-color:${quarry.color}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [26, 26],
-                iconAnchor: [13, 13]
-            });
-            
-            const marker = L.marker(quarry.coords, { icon: customIcon }).addTo(map);
-            
-            let popupContent = `<h3>${quarry.name}</h3>`;
-            popupContent += `<p><strong>Coordinates:</strong> ${quarry.coords[1].toFixed(5)}°, ${quarry.coords[0].toFixed(5)}°</p>`;
-            popupContent += `<p>${quarry.description}</p>`;
-            
-            if (quarry.images && quarry.images.length > 0) {
-                popupContent += '<div class="image-gallery">';
-                quarry.images.forEach(img => {
-                    popupContent += `<img src="${img}" class="image-thumbnail" onclick="openImage('${img}')">`;
+            if (point.type === 'point') {
+                if (markers[pointId]) {
+                    map.removeLayer(markers[pointId]);
+                }
+                
+                const customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color:${point.color}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13]
                 });
-                popupContent += '</div>';
+                
+                const marker = L.marker(point.coords, { icon: customIcon }).addTo(map);
+                
+                let popupContent = `<h3>${point.name}</h3>`;
+                popupContent += `<p><strong>Coordinates:</strong> ${point.coords[1].toFixed(5)}°, ${point.coords[0].toFixed(5)}°</p>`;
+                popupContent += `<p>${point.description}</p>`;
+                
+                if (point.images && point.images.length > 0) {
+                    popupContent += '<div class="image-gallery">';
+                    point.images.forEach(img => {
+                        popupContent += `<img src="${img}" class="image-thumbnail" onclick="openImage('${img}')">`;
+                    });
+                    popupContent += '</div>';
+                }
+                
+                marker.bindPopup(popupContent);
+                markers[pointId] = marker;
+                
+                marker.on('click', function() {
+                    highlightPoint(pointId);
+                });
+            } else if (point.type === 'line') {
+                if (lines[pointId]) {
+                    map.removeLayer(lines[pointId]);
+                }
+                
+                // For lines, coords should be an array of points
+                const line = L.polyline(point.coords, { color: point.color, weight: 4 }).addTo(map);
+                
+                let popupContent = `<h3>${point.name}</h3>`;
+                popupContent += `<p>${point.description}</p>`;
+                
+                if (point.images && point.images.length > 0) {
+                    popupContent += '<div class="image-gallery">';
+                    point.images.forEach(img => {
+                        popupContent += `<img src="${img}" class="image-thumbnail" onclick="openImage('${img}')">`;
+                    });
+                    popupContent += '</div>';
+                }
+                
+                line.bindPopup(popupContent);
+                lines[pointId] = line;
+                
+                line.on('click', function() {
+                    highlightPoint(pointId);
+                });
             }
-            
-            marker.bindPopup(popupContent);
-            markers[quarryId] = marker;
-            
-            marker.on('click', function() {
-                highlightQuarry(quarryId);
-            });
         }
 
         // Mobile sidebar functions
@@ -1631,7 +1727,7 @@
             overlay.classList.toggle('active');
             
             if (!dataLoaded && sidebar.classList.contains('active')) {
-                loadQuarriesFromFirebase();
+                loadPointsFromFirebase();
             }
         }
 
@@ -1713,31 +1809,45 @@
             });
         }
 
-        // Helper function to highlight quarry
-        function highlightQuarry(quarryId) {
-            document.querySelectorAll('.quarry-item').forEach(item => {
+        // Helper function to highlight point
+        function highlightPoint(pointId) {
+            document.querySelectorAll('.point-item').forEach(item => {
                 item.classList.remove('active');
             });
             
-            const quarryItem = document.querySelector(`.quarry-item[data-id="${quarryId}"]`);
-            if (quarryItem) {
-                quarryItem.classList.add('active');
+            const pointItem = document.querySelector(`.point-item[data-id="${pointId}"]`);
+            if (pointItem) {
+                pointItem.classList.add('active');
             }
             
-            if (markers[quarryId]) {
-                markers[quarryId].openPopup();
+            if (markers[pointId]) {
+                markers[pointId].openPopup();
+            } else if (lines[pointId]) {
+                lines[pointId].openPopup();
             }
             
             if (isAdmin) {
-                const quarry = quarries[quarryId];
-                if (quarry) {
-                    document.getElementById('quarry-name').value = quarry.name;
-                    document.getElementById('lat').value = quarry.coords[0];
-                    document.getElementById('lng').value = quarry.coords[1];
-                    document.getElementById('quarry-description').value = quarry.description;
-                    document.getElementById('quarry-color').value = quarry.color;
-                    document.getElementById('color-preview').style.backgroundColor = quarry.color;
-                    currentQuarry = quarryId;
+                const point = points[pointId];
+                if (point) {
+                    document.getElementById('point-name').value = point.name;
+                    
+                    if (point.type === 'point') {
+                        document.getElementById('lat').value = point.coords[0];
+                        document.getElementById('lng').value = point.coords[1];
+                    } else {
+                        // For lines, show the first coordinate
+                        document.getElementById('lat').value = point.coords[0][0];
+                        document.getElementById('lng').value = point.coords[0][1];
+                    }
+                    
+                    document.getElementById('point-description').value = point.description;
+                    document.getElementById('point-color').value = point.color;
+                    document.getElementById('color-preview').style.backgroundColor = point.color;
+                    currentPoint = pointId;
+                    
+                    // Set drawing mode
+                    drawingMode = point.type;
+                    updateDrawingModeUI();
                     
                     uploadedImages = [];
                     updateUploadedImagesList();
@@ -1747,12 +1857,15 @@
 
         // Helper function to reset form
         function resetForm() {
-            document.getElementById('quarry-name').value = '';
+            document.getElementById('point-name').value = '';
             document.getElementById('lat').value = '32.26';
             document.getElementById('lng').value = '36.15';
-            document.getElementById('quarry-description').value = '';
-            document.getElementById('quarry-color').value = '#3498db';
+            document.getElementById('point-description').value = '';
+            document.getElementById('point-color').value = '#3498db';
             document.getElementById('color-preview').style.backgroundColor = '#3498db';
+            
+            drawingMode = 'point';
+            updateDrawingModeUI();
             
             uploadedImages = [];
             updateUploadedImagesList();
@@ -1783,7 +1896,7 @@
             const imageWindow = window.open('', '_blank');
             imageWindow.document.write(`
                 <html>
-                    <head><title>Quarry Image</title></head>
+                    <head><title>Point Image</title></head>
                     <body style="margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#333;">
                         <img src="${imageSrc}" style="max-width:100%; max-height:100%;">
                     </body>
@@ -1791,15 +1904,106 @@
             `);
         };
 
+        // Drawing mode functions
+        function setDrawingMode(mode) {
+            drawingMode = mode;
+            updateDrawingModeUI();
+            
+            // Clear any temporary line
+            if (tempLine) {
+                map.removeLayer(tempLine);
+                tempLine = null;
+            }
+            linePoints = [];
+            
+            if (mode === 'line') {
+                showNotification('Click on the map to add points to your line. Double-click to finish.', 'success');
+            } else {
+                showNotification('Click on the map to add a point.', 'success');
+            }
+        }
+        
+        function updateDrawingModeUI() {
+            document.getElementById('point-mode-btn').classList.remove('drawing-active');
+            document.getElementById('line-mode-btn').classList.remove('drawing-active');
+            
+            if (drawingMode === 'point') {
+                document.getElementById('point-mode-btn').classList.add('drawing-active');
+            } else {
+                document.getElementById('line-mode-btn').classList.add('drawing-active');
+            }
+        }
+        
+        function handleMapClick(e) {
+            if (!isAdmin) return;
+            
+            if (drawingMode === 'point') {
+                document.getElementById('lat').value = e.latlng.lat.toFixed(5);
+                document.getElementById('lng').value = e.latlng.lng.toFixed(5);
+            } else if (drawingMode === 'line') {
+                linePoints.push([e.latlng.lat, e.latlng.lng]);
+                
+                // Update the temporary line
+                if (tempLine) {
+                    map.removeLayer(tempLine);
+                }
+                
+                if (linePoints.length > 1) {
+                    tempLine = L.polyline(linePoints, { color: document.getElementById('point-color').value, weight: 4 }).addTo(map);
+                }
+                
+                // Show coordinates of the first point in the form
+                document.getElementById('lat').value = linePoints[0][0];
+                document.getElementById('lng').value = linePoints[0][1];
+            }
+        }
+        
+        function handleMapDoubleClick(e) {
+            if (!isAdmin || drawingMode !== 'line') return;
+            
+            // Finish the line
+            if (linePoints.length > 1) {
+                const id = 'line-' + Date.now();
+                const name = document.getElementById('point-name').value || 'Unnamed Line';
+                const description = document.getElementById('point-description').value;
+                const color = document.getElementById('point-color').value;
+                
+                const lineData = {
+                    id: id,
+                    coords: linePoints,
+                    name: name,
+                    description: description,
+                    color: color,
+                    type: 'line',
+                    images: [],
+                    created: Date.now(),
+                    updated: Date.now()
+                };
+                
+                savePointToFirebase(id, lineData);
+                updateLegend();
+                
+                // Reset the temporary line
+                if (tempLine) {
+                    map.removeLayer(tempLine);
+                    tempLine = null;
+                }
+                linePoints = [];
+                
+                showNotification('Line saved successfully', 'success');
+            }
+        }
+
         // Initialize the application
         function initApp() {
             updateMapInfo();
             setupEventListeners();
             setupImageUpload();
+            updateDrawingModeUI();
             
             if (db) {
                 initializeDefaultData().then(() => {
-                    loadQuarriesFromFirebase();
+                    loadPointsFromFirebase();
                 });
             }
         }
@@ -1808,17 +2012,19 @@
         function setupEventListeners() {
             map.on('moveend', updateMapInfo);
             map.on('zoomend', updateMapInfo);
+            map.on('click', handleMapClick);
+            map.on('dblclick', handleMapDoubleClick);
             
-            document.getElementById('quarry-color').addEventListener('input', function() {
+            document.getElementById('point-color').addEventListener('input', function() {
                 document.getElementById('color-preview').style.backgroundColor = this.value;
             });
             
             document.getElementById('refresh-data').addEventListener('click', function() {
-                loadQuarriesFromFirebase();
+                loadPointsFromFirebase();
             });
             
             document.getElementById('retry-connection').addEventListener('click', function() {
-                loadQuarriesFromFirebase();
+                loadPointsFromFirebase();
             });
             
             document.getElementById('reset-view').addEventListener('click', function() {
@@ -1852,92 +2058,124 @@
             
             document.getElementById('logout-btn').addEventListener('click', logoutUser);
             
-            document.getElementById('add-quarry-btn').addEventListener('click', async function() {
+            document.getElementById('point-mode-btn').addEventListener('click', function() {
+                setDrawingMode('point');
+            });
+            
+            document.getElementById('line-mode-btn').addEventListener('click', function() {
+                setDrawingMode('line');
+            });
+            
+            document.getElementById('add-point-btn').addEventListener('click', async function() {
                 if (!isAdmin) {
                     showNotification('Please log in first', 'error');
                     return;
                 }
                 
-                const name = document.getElementById('quarry-name').value;
+                const name = document.getElementById('point-name').value;
                 const lat = parseFloat(document.getElementById('lat').value);
                 const lng = parseFloat(document.getElementById('lng').value);
-                const description = document.getElementById('quarry-description').value;
-                const color = document.getElementById('quarry-color').value;
+                const description = document.getElementById('point-description').value;
+                const color = document.getElementById('point-color').value;
                 
-                if (!name || !lat || !lng) {
-                    showNotification('Please fill in at least name and coordinates', 'error');
+                if (!name) {
+                    showNotification('Please enter a name', 'error');
                     return;
                 }
                 
-                const id = 'quarry-' + Date.now();
+                if (drawingMode === 'point' && (!lat || !lng)) {
+                    showNotification('Please fill in coordinates or click on the map', 'error');
+                    return;
+                }
                 
-                const quarryData = {
+                if (drawingMode === 'line' && linePoints.length < 2) {
+                    showNotification('Please add at least two points to create a line', 'error');
+                    return;
+                }
+                
+                const id = drawingMode === 'point' ? 'point-' + Date.now() : 'line-' + Date.now();
+                
+                const pointData = {
                     id: id,
-                    coords: [lat, lng],
+                    coords: drawingMode === 'point' ? [lat, lng] : linePoints,
                     name: name,
                     description: description,
                     color: color,
+                    type: drawingMode,
                     images: [],
                     created: Date.now(),
                     updated: Date.now()
                 };
                 
-                await saveQuarryToFirebase(id, quarryData);
+                await savePointToFirebase(id, pointData);
                 updateLegend();
                 resetForm();
+                
+                // Reset line drawing
+                if (drawingMode === 'line') {
+                    if (tempLine) {
+                        map.removeLayer(tempLine);
+                        tempLine = null;
+                    }
+                    linePoints = [];
+                }
             });
             
-            document.getElementById('update-quarry-btn').addEventListener('click', async function() {
+            document.getElementById('update-point-btn').addEventListener('click', async function() {
                 if (!isAdmin) {
                     showNotification('Please log in first', 'error');
                     return;
                 }
                 
-                if (!currentQuarry) {
-                    showNotification('Please select a quarry to update', 'error');
+                if (!currentPoint) {
+                    showNotification('Please select a point to update', 'error');
                     return;
                 }
                 
-                const name = document.getElementById('quarry-name').value;
+                const name = document.getElementById('point-name').value;
                 const lat = parseFloat(document.getElementById('lat').value);
                 const lng = parseFloat(document.getElementById('lng').value);
-                const description = document.getElementById('quarry-description').value;
-                const color = document.getElementById('quarry-color').value;
+                const description = document.getElementById('point-description').value;
+                const color = document.getElementById('point-color').value;
                 
-                if (!name || !lat || !lng) {
-                    showNotification('Please fill in at least name and coordinates', 'error');
+                if (!name) {
+                    showNotification('Please enter a name', 'error');
                     return;
                 }
                 
-                const quarryData = {
-                    ...quarries[currentQuarry],
+                const pointData = {
+                    ...points[currentPoint],
                     name: name,
-                    coords: [lat, lng],
                     description: description,
                     color: color,
                     updated: Date.now()
                 };
                 
-                await saveQuarryToFirebase(currentQuarry, quarryData);
+                // Update coordinates only for points, not lines
+                if (points[currentPoint].type === 'point') {
+                    pointData.coords = [lat, lng];
+                }
+                
+                await savePointToFirebase(currentPoint, pointData);
                 updateLegend();
             });
             
-            document.getElementById('delete-quarry-btn').addEventListener('click', async function() {
+            document.getElementById('delete-point-btn').addEventListener('click', async function() {
                 if (!isAdmin) {
                     showNotification('Please log in first', 'error');
                     return;
                 }
                 
-                if (!currentQuarry) {
-                    showNotification('Please select a quarry to delete', 'error');
+                if (!currentPoint) {
+                    showNotification('Please select a point to delete', 'error');
                     return;
                 }
                 
-                if (confirm('Are you sure you want to delete this quarry?')) {
-                    await deleteQuarryFromFirebase(currentQuarry);
+                if (confirm('Are you sure you want to delete this point/line?')) {
+                    await deletePointFromFirebase(currentPoint);
                     updateLegend();
                     resetForm();
-                    currentQuarry = null;
+                    currentPoint = null;
                 }
             });
             
@@ -1952,17 +2190,10 @@
             document.getElementById('mobile-toggle').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
             document.getElementById('overlay').addEventListener('click', closeSidebar);
-            
-            map.on('click', function(e) {
-                if (isAdmin) {
-                    document.getElementById('lat').value = e.latlng.lat.toFixed(5);
-                    document.getElementById('lng').value = e.latlng.lng.toFixed(5);
-                }
-            });
         }
 
         // Initialize the application when the page loads
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
-            </html>
+    </html>
