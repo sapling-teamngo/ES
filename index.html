@@ -168,6 +168,7 @@
             flex: 1;
             overflow: hidden;
             flex-direction: row;
+            position: relative;
         }
         
         @media (max-width: 768px) {
@@ -509,9 +510,10 @@
             flex: 1;
         }
         
+        /* Map controls positioned above coordinates */
         .map-controls {
             position: absolute;
-            bottom: 100px;
+            bottom: 170px;
             left: 10px;
             background: white;
             border-radius: 4px;
@@ -525,7 +527,7 @@
         
         @media (max-width: 768px) {
             .map-controls {
-                bottom: 120px;
+                bottom: 190px;
                 left: 10px;
                 padding: 0.4rem;
             }
@@ -553,10 +555,11 @@
             }
         }
         
+        /* Legend positioned above coordinates */
         .legend {
             position: absolute;
-            bottom: 30px;
-            right: 20px;
+            bottom: 170px;
+            right: 10px;
             background: white;
             border-radius: 4px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
@@ -569,7 +572,7 @@
         
         @media (max-width: 768px) {
             .legend {
-                bottom: 80px;
+                bottom: 190px;
                 right: 10px;
                 max-width: 180px;
                 max-height: 250px;
@@ -1165,6 +1168,7 @@
             </div>
         </div>
         
+        <!-- Map controls positioned above coordinates -->
         <div class="map-controls">
             <button class="control-btn" id="zoom-in">
                 <i class="fas fa-search-plus"></i>
@@ -1177,10 +1181,19 @@
             </button>
         </div>
         
+        <!-- Legend positioned above coordinates -->
+        <div class="legend" id="legend">
+            <h4>Legend</h4>
+            <div id="legend-items">
+                <!-- Legend items will be populated dynamically -->
+            </div>
+        </div>
+        
         <button class="mobile-toggle" id="mobile-toggle">
             <i class="fas fa-bars"></i> Menu
         </button>
         
+        <!-- Mobile coordinates panel at the bottom -->
         <div class="mobile-coordinates-panel">
             <h4><i class="fas fa-map-marker-alt"></i> Current View</h4>
             <div class="coordinates-grid">
@@ -1204,13 +1217,6 @@
         </div>
         
         <div class="overlay" id="overlay"></div>
-        
-        <div class="legend" id="legend">
-            <h4>Legend</h4>
-            <div id="legend-items">
-                <!-- Legend items will be populated dynamically -->
-            </div>
-        </div>
         
         <div class="notification" id="notification"></div>
     </div>
@@ -1489,7 +1495,7 @@
             });
         }
 
-        // Save point to Firebase (WITH BASE64 IMAGES)
+        // Save point to Firebase (WITH BASE64 IMAGES) - FIXED FOR NESTED ARRAYS
         async function savePointToFirebase(pointId, pointData) {
             if (!isAdmin) {
                 showNotification('Please log in first', 'error');
@@ -1520,6 +1526,20 @@
                     
                     uploadedImages = [];
                     updateUploadedImagesList();
+                }
+                
+                // Fix for nested arrays - convert line coordinates to a format Firestore accepts
+                if (pointData.type === 'line' && Array.isArray(pointData.coords)) {
+                    // Convert nested arrays to objects with lat/lng properties
+                    pointData.coords = pointData.coords.map(coord => {
+                        if (Array.isArray(coord) && coord.length >= 2) {
+                            return {
+                                lat: coord[0],
+                                lng: coord[1]
+                            };
+                        }
+                        return coord;
+                    });
                 }
                 
                 await db.collection('points').doc(pointId).set(pointData);
@@ -1634,12 +1654,21 @@
                     '<i class="fas fa-draw-polygon" style="margin-right: 8px;"></i>' : 
                     '<span class="legend-color" style="display:inline-block; margin-right:8px; background-color:' + point.color + ';"></span>';
                 
+                let coordsText = '';
+                if (point.type === 'point') {
+                    coordsText = `${point.coords[1].toFixed(5)}°, ${point.coords[0].toFixed(5)}°`;
+                } else {
+                    // For lines, show the number of points
+                    const pointCount = Array.isArray(point.coords) ? point.coords.length : 0;
+                    coordsText = `${pointCount} points`;
+                }
+                
                 pointItem.innerHTML = `
                     <div class="point-name">
                         ${icon}
                         ${point.name}
                     </div>
-                    <div class="point-coords">${point.coords[1].toFixed(5)}°, ${point.coords[0].toFixed(5)}°</div>
+                    <div class="point-coords">${coordsText}</div>
                     <div class="point-description">${point.description.substring(0, 100)}${point.description.length > 100 ? '...' : ''}</div>
                 `;
                 
@@ -1696,8 +1725,18 @@
                     map.removeLayer(lines[pointId]);
                 }
                 
-                // For lines, coords should be an array of points
-                const line = L.polyline(point.coords, { color: point.color, weight: 4 }).addTo(map);
+                // For lines, coords should be converted back from objects to arrays
+                let lineCoords = [];
+                if (Array.isArray(point.coords)) {
+                    lineCoords = point.coords.map(coord => {
+                        if (coord.lat && coord.lng) {
+                            return [coord.lat, coord.lng];
+                        }
+                        return coord;
+                    });
+                }
+                
+                const line = L.polyline(lineCoords, { color: point.color, weight: 4 }).addTo(map);
                 
                 let popupContent = `<h3>${point.name}</h3>`;
                 popupContent += `<p>${point.description}</p>`;
@@ -1836,8 +1875,16 @@
                         document.getElementById('lng').value = point.coords[1];
                     } else {
                         // For lines, show the first coordinate
-                        document.getElementById('lat').value = point.coords[0][0];
-                        document.getElementById('lng').value = point.coords[0][1];
+                        if (Array.isArray(point.coords) && point.coords.length > 0) {
+                            const firstCoord = point.coords[0];
+                            if (firstCoord.lat && firstCoord.lng) {
+                                document.getElementById('lat').value = firstCoord.lat;
+                                document.getElementById('lng').value = firstCoord.lng;
+                            } else if (Array.isArray(firstCoord)) {
+                                document.getElementById('lat').value = firstCoord[0];
+                                document.getElementById('lng').value = firstCoord[1];
+                            }
+                        }
                     }
                     
                     document.getElementById('point-description').value = point.description;
